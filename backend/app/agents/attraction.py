@@ -1,9 +1,14 @@
+"""
+景点agent:查高德POI ->输出结构化Attraction列表。
+不做文字总结，只做数据采集。
+文字描述/游览时长/门票等细节交给 intinerary agent统一生成。-- 职责更清晰
+"""
+
 import os
 import requests
 from dotenv import load_dotenv
-from langchain_deepseek import ChatDeepSeek
-from langchain_core.messages import SystemMessage
 from app.graph.state import TravelState
+from app.schemas import Attraction
 
 load_dotenv()
 
@@ -11,19 +16,6 @@ API_KEY = os.getenv("GAODE_API_KEY")
 # 高德POI类型：110000=风景名胜，140000=科教文化（博物馆等）
 POI_TYPES= "110000|140100"
 
-ATTRACTION_ANALYST_PROMPT = """你是一个景点推荐官，熟悉各地的旅游资源。
-用户要去{location}玩{trip_days}天。
-以下是当地热门景点数据：
-{attractions}
-
-请用3-5句话推荐：
-1.精选3-5个最值得去的（别全列）
-2.说明每个的亮点（自然/文化/亲子/拍照等）
-3.如果景点分布分散，可以提行程安排建议（比如“东城区一天够逛”）
-像朋友推荐那样自然，不要罗列所有数据。
-"""
-
-llm = ChatDeepSeek(model="deepseek-chat",temperature=0.5)
 
 def fetch_attractions(city:str,limit:int=10) -> list[dict]:
     """按城市搜索景点"""
@@ -36,61 +28,56 @@ def fetch_attractions(city:str,limit:int=10) -> list[dict]:
         "city_limit":"true", # 限制只在该城市内搜
         "page_size":limit,
         "page_num":1,
-        "show_fields":"business" # 能拿到营业时间和评分
+        "show_fields":"business,photos" # 能拿到营业时间和评分,photos拿图片URL
     }
     resp = requests.get(url,params=params,timeout=10)
     data = resp.json()
     if data.get("status") != "1":
         return []
 
-    return [
-        {
-            "name":p.get("name"),
-            "address":p.get("address"), 
-            "type":p.get("type"), # 类型，如“风景名胜；公园广场”
-            "location":p.get("location"), # “经度，纬度”
-            "rating":p.get("business",{}).get("rating"), # 评分，可能为空
-            "tag":p.get("business",{}).get("tag")  # 特色内容
-        }
-        for p in data.get("pois",[])
-    ]
+    return data.get("pois",[])
     
-async def summarize_attractions(info:dict) -> str:
-    if info.get("error"):
-        return f"景点查询失败:{info['error']}"
-    prompt = ATTRACTION_ANALYST_PROMPT.format(
-        location=info["location"],
-        trip_days=info["trip_days"],
-        attractions=info["attractions"]
+def parse_to_attraction(poi:dict) -> Attraction | None:
+    """高德POI原始dict转化为Attraction schema.解析失败返回None"""
+    loc = poi.get("location","")
+    if not loc or "," not in loc:
+        return None
+    lng,lat = loc.split(",")
+
+    # photos 字段是数组，可能为空
+    photos = poi.get("photos") or []
+    image_url = photos[0].get("url") if photos else None
+
+    return Attraction(
+        name=poi.get("name",""),
+        address=poi.get("address") or poi.get("pname",""),
+        longitude=float(lng),
+        latitude=float(lat),
+        # 下面三个字段高德不提供，先给默认值；itinerary agent 会基于名称补全
+        duration_minutes=120,
+        tricket_price=0,
+        description="",
+        image_url=image_url
     )
 
-    result = await llm.ainvoke([SystemMessage(content=prompt)])
-    return result.content
-
-async def attraction_node(state:TravelState) -> dict:
-    destination = state.get("destination","")
-    dates = state.get("dates",{})
-    trip_days = int(dates.get("days",3))
-
-    print(f"[AttractionAgent] 查询{destination}的景点")
+def attraction_node(state:TravelState) -> dict:
+    """LangGraph节点。从state读request,返回要合并进state的字段"""
+    req = state["request"]
+    print(f"[AttractionAgent]查询{req.destination}的景点")
 
     try:
-        attractions = fetch_attractions(destination,limit=10)
-        if not attractions:
-            info = {"location":destination,"error":"没有找到景点"}
-        else:
-            info = {
-                "location":destination,
-                "trip_days":trip_days,
-                "attractions":attractions
-            }
-            print(f"[AttractionAgent] 找到{len(attractions)}个景点")
+        pois = fetch_attractions(req.destination,limit=10)
+        attractions: list[Attraction] = []
+        for p in pois:
+            a = parse_to_attraction(p)
+            if a:
+                attractions.append(a)
+        print(f"[AttractionAgent]找到{len(attractions)}个景点")
     except Exception as e:
-        print(f"[AttractionAgent]查询失败:{e}")
-        info = {"location":destination,"error":str(e)}
-    
-    summary = await summarize_attractions(info)
-    return {"agent_outputs":{"attraction":summary}}
+        print(f"[AttractionAgent]查询失败：{e}")
+        attractions = []
+    return {"attractions_raw": attractions}
+
 
 # if __name__ == '__main__':
 #     attraction_node({"destination":"北京","dates":{"days":3},"budget":5000}) 

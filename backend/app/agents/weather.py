@@ -8,16 +8,6 @@ API_KEY=os.getenv("WEATHER_API_KEY")
 API_HOST=os.getenv("WEATHER_API_HOST")
 SUPPORT_DAYS = [3, 7, 10, 15, 30] # 和风支持的天数
 
-WEATHER_ANALYST_PROMPT = """你是一个天气分析师，擅长把原始天气数据翻译成旅行建议。
-用户要去{location}旅行{trip_days}天，以下是预报数据：
-{forecast}
-
-请用2-4句话总结：
-1.整体天气趋势（例如：“前两天多云，后面转晴天”）
-2.温度范围和穿衣提醒
-3.如果有降雨/大风/高温等特殊情况要提醒
-不要罗列每一天，像朋友聊天那样自然
-"""
 
 def lookup_location_id(city:str) -> str:
     """根据城市名称查询locationID"""
@@ -57,10 +47,12 @@ def fetch_weather(location_id:str,days:int=7) -> list[dict]:
         for d in data.get("daily", [])
     ]
 
-async def weather_node(state:TravelState) -> dict:
-    destination = state.get("destination","")
-    dates = state.get("dates","")
-    trip_days = int(dates.get("days",3))
+def weather_node(state:TravelState) -> dict:
+    """只做数据采集，不做语言总结"""
+    req = state["request"]
+
+    destination = req.destination
+    trip_days = req.trip_days
 
     query_days = pick_endpoint_days(trip_days)
     print(f"[WeatherAgent] {destination} 出行{trip_days}天，查询{query_days}天天气")
@@ -68,31 +60,11 @@ async def weather_node(state:TravelState) -> dict:
     try:
         location_id = lookup_location_id(destination)
         if not location_id:
-            weather_info = {"location":destination,"error":"找不到该城市"}
-        else:
-            forecast = fetch_weather(location_id,days=query_days)
-            # 只取实际出行的天数
-            weather_info = {
-                "location":destination,
-                "trip_days":trip_days,
-                "forcast":forecast[:trip_days]
-            }
-            print(f"[WeatherAgent] 查询成功，返回{forecast}天")
+            print(f"[WeatherAgent] 找不到城市")
+            return {"weather_raw":[]}
+        forcast = fetch_weather(location_id,days=query_days)
+        return {"weather_raw": forcast[:trip_days]} # 只取实际出行天数
     except Exception as e:
         print(f"[WeatherAgent] 查询失败: {e}")
-        weather_info = {"location": destination, "error": str(e)}
+        return {"weather_raw":[]}
     
-    summary = await summarize_weather(weather_info)
-    print('summary总结',summary)
-    return {"agent_outputs":{"weather":summary}}
-
-async def summarize_weather(weather_info:dict) -> str:
-    if weather_info.get("error"):
-        return f"天气查询失败：{weather_info['error']}"
-    prompt = WEATHER_ANALYST_PROMPT.format(
-        location=weather_info["location"],
-        trip_days=weather_info["trip_days"],
-        forecast=weather_info["forcast"]
-    )
-    result = await llm.ainvoke([SystemMessage(content=prompt)])
-    return result.content
