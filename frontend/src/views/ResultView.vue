@@ -1,14 +1,28 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import type { TripPlan } from '../types'
+import ResultSidebar from '../components/ResultSidebar.vue'
 
-defineProps<{ tripPlan: TripPlan }>()
+const props = defineProps<{ tripPlan: TripPlan }>()
 const emit = defineEmits<{ back: [] }>()
+
+// Task 9 会做 scroll-spy，现在先固定为 'overview'
+const activeId = ref<string>('overview')
+
+const dailyList = computed(() =>
+  props.tripPlan.daily_plans.map((d) => ({ day: d.day, date: d.date }))
+)
 
 function onEditClick() {
   alert('编辑行程 —— 功能开发中')
 }
 function onExportClick() {
   alert('导出行程 —— 功能开发中')
+}
+
+function handleNavigate(id: string) {
+  // Task 9 会接平滑滚动，现在先只更新 activeId 看高亮切换
+  activeId.value = id
 }
 </script>
 
@@ -26,8 +40,11 @@ function onExportClick() {
     <!-- 左侧栏 + 右内容 -->
     <div class="layout">
       <aside class="sidebar-slot">
-        <!-- Task 3 会放 ResultSidebar -->
-        <div style="padding:16px;background:#fff;border-radius:12px;">侧边栏占位</div>
+        <ResultSidebar
+          :active-id="activeId"
+          :daily-list="dailyList"
+          @navigate="handleNavigate"
+        />
       </aside>
 
       <main class="content">
