@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { TripPlan } from '../types'
 import ResultSidebar from '../components/ResultSidebar.vue'
 import OverviewCard from '../components/OverviewCard.vue'
+import BudgetCard from '../components/BudgetCard.vue'
 
 const props = defineProps<{ tripPlan: TripPlan }>()
 const emit = defineEmits<{ back: [] }>()
@@ -57,7 +58,9 @@ function handleNavigate(id: string) {
             :suggestion="tripPlan.suggestion"
           />
         </section>
-        <section id="budget" class="section-slot">BudgetCard 占位</section>
+        <section id="budget">
+          <BudgetCard :budget="tripPlan.budget" />
+        </section>
         <section id="map" class="section-slot">AttractionMap 占位</section>
         <section id="daily" class="section-slot">DailyPlan 占位</section>
         <section id="weather" class="section-slot">WeatherCard 占位</section>
