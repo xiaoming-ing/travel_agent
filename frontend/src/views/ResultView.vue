@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import type { TripPlan } from '../types'
 import ResultSidebar from '../components/ResultSidebar.vue'
 import OverviewCard from '../components/OverviewCard.vue'
@@ -11,24 +11,63 @@ import WeatherCard from '../components/WeatherCard.vue'
 const props = defineProps<{ tripPlan: TripPlan }>()
 const emit = defineEmits<{ back: [] }>()
 
-// Task 9 会做 scroll-spy，现在先固定为 'overview'
 const activeId = ref<string>('overview')
 
 const dailyList = computed(() =>
   props.tripPlan.daily_plans.map((d) => ({ day: d.day, date: d.date }))
 )
 
-function onEditClick() {
-  alert('编辑行程 —— 功能开发中')
-}
-function onExportClick() {
-  alert('导出行程 —— 功能开发中')
-}
+function onEditClick() { alert('编辑行程 —— 功能开发中') }
+function onExportClick() { alert('导出行程 —— 功能开发中') }
 
 function handleNavigate(id: string) {
-  // Task 9 会接平滑滚动，现在先只更新 activeId 看高亮切换
-  activeId.value = id
+  const el = document.getElementById(id)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 }
+
+// ===== Scroll-spy =====
+let observer: IntersectionObserver | null = null
+
+onMounted(async () => {
+  await nextTick()
+
+  const ids = [
+    'overview',
+    'budget',
+    'map',
+    'daily',
+    ...props.tripPlan.daily_plans.map((d) => `day-${d.day}`),
+    'weather',
+  ]
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      // 找当前页面里可见度最高的 section
+      const visible = entries
+        .filter((e) => e.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
+      if (visible.length > 0) {
+        activeId.value = visible[0].target.id
+      }
+    },
+    {
+      // 窗口顶部 20% 以下开始算可见，底部 50% 以下不算
+      rootMargin: '-20% 0px -50% 0px',
+      threshold: [0, 0.1, 0.3, 0.5],
+    }
+  )
+
+  ids.forEach((id) => {
+    const el = document.getElementById(id)
+    if (el) observer!.observe(el)
+  })
+})
+
+onUnmounted(() => {
+  observer?.disconnect()
+})
 </script>
 
 <template>
