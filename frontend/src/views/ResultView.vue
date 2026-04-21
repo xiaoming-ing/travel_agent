@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import type { TripPlan } from '../types'
 import ResultSidebar from '../components/ResultSidebar.vue'
+import OverviewCard from '../components/OverviewCard.vue'
 
 const props = defineProps<{ tripPlan: TripPlan }>()
 const emit = defineEmits<{ back: [] }>()
@@ -48,7 +49,14 @@ function handleNavigate(id: string) {
       </aside>
 
       <main class="content">
-        <section id="overview" class="section-slot">OverviewCard 占位</section>
+        <section id="overview">
+          <OverviewCard
+            :destination="tripPlan.destination"
+            :start-date="tripPlan.start_date"
+            :end-date="tripPlan.end_date"
+            :suggestion="tripPlan.suggestion"
+          />
+        </section>
         <section id="budget" class="section-slot">BudgetCard 占位</section>
         <section id="map" class="section-slot">AttractionMap 占位</section>
         <section id="daily" class="section-slot">DailyPlan 占位</section>
