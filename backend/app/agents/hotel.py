@@ -74,38 +74,71 @@ def score_hotel(rating: float, distance_km: float, transport: str) -> float:
     return w_r * rating_score + w_d * distance_score
 
 
-def fetch_hotels(city:str,hotel_type:str,limit:int = 5) -> list[dict]:
-    url = "https://restapi.amap.com/v5/place/text"
+def fetch_hotels_around(centroid: tuple[float, float], hotel_type: str, limit: int = 15) -> list[dict]:
+    """以景点重心为圆心做周边搜，返回高德 POI 原始 dict 列表。"""
+    lng, lat = centroid
+    url = "https://restapi.amap.com/v5/place/around"
     params = {
-        "key":API_KEY,
-        "types":ACCOMMODATION_TYPE_MAP.get(hotel_type,"100100"),
-        "region":city,
-        "city_limit":"true",
-        "page_size":limit,
-        "page_num":1,
-        "show_fields":"business"
+        "key": API_KEY,
+        "location": f"{lng},{lat}",
+        "radius": 10000,
+        "types": ACCOMMODATION_TYPE_MAP.get(hotel_type, "100100"),
+        "page_size": limit,
+        "page_num": 1,
+        "show_fields": "business",
+        "sortrule": "weight",
     }
-    resp = requests.get(url,params=params,timeout=10)
+    resp = requests.get(url, params=params, timeout=10)
     data = resp.json()
     if data.get("status") != "1":
         return []
-    return data.get("pois",[])
+    return data.get("pois", [])
 
-def parse_to_hotel(poi:dict,hotel_type:str) -> Hotel:
-    """高德POI -> Hotel schema。评分字段可能是空字符串，要兜底。"""
-    rating_raw = (poi.get("business") or {}).get("rating","")
+
+def fetch_hotels_by_city(city: str, hotel_type: str, limit: int = 5) -> list[dict]:
+    """退化路径：景点重心算不出来时，按城市全市搜（保留旧行为）。"""
+    url = "https://restapi.amap.com/v5/place/text"
+    params = {
+        "key": API_KEY,
+        "types": ACCOMMODATION_TYPE_MAP.get(hotel_type, "100100"),
+        "region": city,
+        "city_limit": "true",
+        "page_size": limit,
+        "page_num": 1,
+        "show_fields": "business",
+    }
+    resp = requests.get(url, params=params, timeout=10)
+    data = resp.json()
+    if data.get("status") != "1":
+        return []
+    return data.get("pois", [])
+
+
+def parse_to_hotel(poi: dict, hotel_type: str) -> Hotel | None:
+    """高德 POI -> Hotel schema。location 缺失返回 None。"""
+    loc = poi.get("location", "")
+    if not loc or "," not in loc:
+        return None
+    try:
+        lng, lat = (float(x) for x in loc.split(","))
+    except ValueError:
+        return None
+
+    rating_raw = (poi.get("business") or {}).get("rating", "")
     try:
         rating = float(rating_raw) if rating_raw else 0.0
-    except (ValueError,TypeError):
+    except (ValueError, TypeError):
         rating = 0.0
-    
+
     return Hotel(
-        name=poi.get("name",""),
-        address=poi.get("address") or poi.get("pname",""),
+        name=poi.get("name", ""),
+        address=poi.get("address") or poi.get("pname", ""),
         type=hotel_type,
-        price_range=PRICE_RANGE_MAP.get(hotel_type,"300-500元"),
+        price_range=PRICE_RANGE_MAP.get(hotel_type, "300-500元"),
         rating=rating,
-        distance_note="距离景点5公里" # 简化处理：精确距离可以后面迭代
+        distance_note="",                      # hotel_node 里再填
+        longitude=lng,
+        latitude=lat,
     )
 
 def hotel_node(state:TravelState) -> dict:
