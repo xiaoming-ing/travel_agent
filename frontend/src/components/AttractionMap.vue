@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, shallowRef } from 'vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
-import type { Attraction } from '../types'
+import type { Attraction,Hotel } from '../types'
 
-const props = defineProps<{ attractions: Attraction[] }>()
+const props = defineProps<{ 
+  attractions: Attraction[],
+  hotels?:Hotel[]
+ }>()
 
 const mapContainer = ref<HTMLDivElement | null>(null)
 const errorMsg = ref<string | null>(null)
@@ -27,7 +30,7 @@ onMounted(async () => {
     mapInstance.value = map
 
     // 创建编号 Marker
-    const markers = props.attractions.map((a, idx) => {
+    const attractionMarkers = props.attractions.map((a, idx) => {
       const num = idx + 1
       return new AMap.Marker({
         position: [a.longitude, a.latitude],
@@ -37,7 +40,7 @@ onMounted(async () => {
       })
     })
 
-    // 创建连线（按顺序）
+    // 景点连线
     const polyline = new AMap.Polyline({
       path: props.attractions.map((a) => [a.longitude, a.latitude]),
       strokeColor: '#4a5fdc',
@@ -46,7 +49,19 @@ onMounted(async () => {
       lineJoin: 'round',
     })
 
-    map.add([...markers, polyline])
+    // 酒店 Marker（红色 H 编号，和景点区分）
+    const hotelMarkers = (props.hotels ?? [])
+    .filter((h)=> h.longitude && h.latitude)
+    .map((h,idx)=>{
+      return new AMap.Marker({
+        position: [h.longitude, h.latitude],
+        content: `<div class="amap-hotel-marker">H${idx + 1}</div>`,
+        offset: new AMap.Pixel(-14, -14),
+        title: `${h.name}  ⭐${h.rating}  ${h.price_range}`,   // 鼠标悬停显示
+      })
+    })
+
+    map.add([...attractionMarkers, ...hotelMarkers, polyline])
     map.setFitView()
   } catch (e: any) {
     errorMsg.value = `地图加载失败：${e.message || '未知错误'}`
@@ -84,6 +99,21 @@ onUnmounted(() => {
   border: 2px solid #fff;
   box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
+
+.amap-hotel-marker {
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  border-radius: 50%;
+  background: #ef4444;            /* 红色，区分景点的蓝 */
+  color: #fff;
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
 </style>
 
 <style scoped>

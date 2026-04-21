@@ -35,7 +35,7 @@ PRICE_RANGE_MAP= {
     "民宿": "200-600元",
 }
 
-# 按交通方式的打分权重 (w_rating, w_distance, max_km)
+# 按交通方式的打分权重 (w_rating, w_distance, max_km) 评分权重，距离权重，能接受的最远距离
 TRANSPORT_WEIGHTS = {
     "公共交通": (0.6, 0.4, 8.0),
     "自驾":     (0.4, 0.6, 6.0),
@@ -69,9 +69,9 @@ def haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 def score_hotel(rating: float, distance_km: float, transport: str) -> float:
     """按交通方式给酒店打分，分越高越优。"""
     w_r, w_d, max_km = TRANSPORT_WEIGHTS.get(transport, DEFAULT_WEIGHTS)
-    rating_score = rating / 5
-    distance_score = max(0.0, 1 - distance_km / max_km)
-    return w_r * rating_score + w_d * distance_score
+    rating_score = rating / 5 # 归一化到[0,1]
+    distance_score = max(0.0, 1 - distance_km / max_km) # 越近越接近1，超过max_km就是0
+    return w_r * rating_score + w_d * distance_score # 加权求和
 
 
 def fetch_hotels_around(centroid: tuple[float, float], hotel_type: str, limit: int = 15) -> list[dict]:

@@ -31,6 +31,8 @@ export interface Hotel {
   price_range: string
   rating: number
   distance_note: string
+  longitude: number
+  latitude: number
 }
 
 export interface MealPlan {
@@ -46,7 +48,6 @@ export interface DailyPlan {
   transport: string
   accommodation: string
   attraction_names: string[]
-  hotel: Hotel
   meals: MealPlan
 }
 
@@ -67,5 +68,6 @@ export interface TripPlan {
   budget: BudgetBreakdown
   attractions: Attraction[]
   daily_plans: DailyPlan[]
+  hotels: Hotel[]           // 推荐住宿Top3，按交通方式+距离+评分综合排序
   weather_summary: string
 }

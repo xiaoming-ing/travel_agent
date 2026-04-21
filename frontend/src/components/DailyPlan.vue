@@ -85,19 +85,6 @@ function attractionsOfDay(day: DailyPlan) {
             </div>
           </div>
 
-          <!-- 住宿推荐 -->
-          <h4 class="subhead">🏩 住宿推荐</h4>
-          <div class="hotel-card">
-            <div class="hotel-name">{{ d.hotel.name }}</div>
-            <div class="hotel-grid">
-              <div><strong>地址：</strong>{{ d.hotel.address }}</div>
-              <div><strong>类型：</strong>{{ d.hotel.type }}</div>
-              <div><strong>价格范围：</strong>{{ d.hotel.price_range }}</div>
-              <div><strong>评分：</strong>{{ d.hotel.rating }} ⭐</div>
-              <div class="span-2"><strong>距离：</strong>{{ d.hotel.distance_note }}</div>
-            </div>
-          </div>
-
           <!-- 餐饮安排 -->
           <h4 class="subhead">🍽️ 餐饮安排</h4>
           <table class="meals-table">
@@ -240,24 +227,6 @@ function attractionsOfDay(day: DailyPlan) {
 .att-meta { margin-bottom: 4px; }
 .att-meta strong { color: #666; font-weight: 600; }
 
-/* 酒店卡片（蓝色渐变） */
-.hotel-card {
-  background: linear-gradient(135deg, #60a5fa, #93c5fd);
-  border-radius: 10px;
-  color: #fff;
-  padding: 16px 20px;
-}
-.hotel-name { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
-.hotel-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px 20px;
-  font-size: 13px;
-  line-height: 1.7;
-}
-.hotel-grid strong { font-weight: 600; opacity: 0.9; }
-.span-2 { grid-column: span 2; }
-
 /* 餐饮表格 */
 .meals-table {
   width: 100%;
@@ -279,7 +248,5 @@ function attractionsOfDay(day: DailyPlan) {
 
 @media (max-width: 900px) {
   .attractions-grid { grid-template-columns: 1fr; }
-  .hotel-grid { grid-template-columns: 1fr; }
-  .span-2 { grid-column: span 1; }
 }
 </style>

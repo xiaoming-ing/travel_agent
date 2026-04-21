@@ -19,9 +19,11 @@ builder.add_edge(START, "weather")
 builder.add_edge(START, "attraction")
 builder.add_edge("attraction", "hotel")
 
-builder.add_edge("weather", "itinerary")
-builder.add_edge("attraction", "itinerary")
-builder.add_edge("hotel", "itinerary")
+#["weather","hotel"]是等所有上游完成了再执行
+# builder.add_edge("weather", "itinerary")
+# builder.add_edge("hotel", "itinerary") # 会执行两次，weather完成了执行一次，hotel完成了再执行一次
+builder.add_edge(["weather","hotel"], "itinerary")
+
 
 builder.add_edge("itinerary", END)
 

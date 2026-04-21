@@ -6,6 +6,7 @@ import OverviewCard from '../components/OverviewCard.vue'
 import BudgetCard from '../components/BudgetCard.vue'
 import AttractionMap from '../components/AttractionMap.vue'
 import DailyPlan from '../components/DailyPlan.vue'
+import HotelList from '../components/HotelList.vue'
 import WeatherCard from '../components/WeatherCard.vue'
 
 const props = defineProps<{ tripPlan: TripPlan }>()
@@ -39,6 +40,7 @@ onMounted(async () => {
     'map',
     'daily',
     ...props.tripPlan.daily_plans.map((d) => `day-${d.day}`),
+    'hotels',
     'weather',
   ]
 
@@ -104,13 +106,16 @@ onUnmounted(() => {
           <BudgetCard :budget="tripPlan.budget" />
         </section>
         <section id="map">
-          <AttractionMap :attractions="tripPlan.attractions" />
+          <AttractionMap :attractions="tripPlan.attractions" :hotels="tripPlan.hotels"/>
         </section>
         <section id="daily">
           <DailyPlan
             :daily-plans="tripPlan.daily_plans"
             :all-attractions="tripPlan.attractions"
           />
+        </section>
+        <section id="hotels">
+          <HotelList :hotels="tripPlan.hotels" />
         </section>
         <section id="weather">
           <WeatherCard

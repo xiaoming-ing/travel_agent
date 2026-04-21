@@ -49,7 +49,6 @@ class DailyPlan(BaseModel):
     accommodation: str = Field(...,description="住宿类型")
     # 用景点名称列表引用Attraction,而不是整个对象塞进来-避免数据重复
     attraction_names:List[str] = Field(...,description="当天要去的景点名称列表")
-    hotel:Hotel
     meals:MealPlan
 
 # 预算明细
@@ -87,6 +86,9 @@ class TripPlan(BaseModel):
 
     # 每日行程
     daily_plans: List[DailyPlan]
+
+    # 推荐酒店Top3（程序按交通方式+景点中心距离+评分综合排序后填入，不由LLM生成）
+    hotels: List[Hotel] = Field(default_factory=list, description="推荐住宿Top3")
 
     # 天气信息
     weather_summary: str = Field(...,description="天气总结文本")

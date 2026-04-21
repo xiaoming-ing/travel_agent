@@ -55,6 +55,16 @@ const mainItems = [
       </button>
     </div>
 
+    <!-- 住宿选择 -->
+    <button
+      class="nav-item"
+      :class="{ active: activeId === 'hotels' }"
+      @click="emit('navigate', 'hotels')"
+    >
+      <span class="icon">🏨</span>
+      <span>住宿选择</span>
+    </button>
+
     <!-- 天气 -->
     <button
       class="nav-item"
