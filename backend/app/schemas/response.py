@@ -28,7 +28,9 @@ class Hotel(BaseModel):
     type:str = Field(...,description="酒店类型，如‘经济型酒店’")
     price_range:str = Field(...,description="价格区间，如‘300-500’")
     rating:float = Field(default=0,description="评分0-5")
-    distance_note:str = Field(default="",description="距景点距离描述，如‘距景点5公里’")
+    distance_note:str = Field(default="",description="距景点距离描述，如‘距景点中心3.2km’")
+    longitude: float = Field(default=0.0, description="经度")
+    latitude: float = Field(default=0.0, description="纬度")
 
 
 # 餐饮（早/午/晚）
