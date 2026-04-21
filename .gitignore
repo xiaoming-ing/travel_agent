@@ -1,3 +1,17 @@
 
 #环境变量/密钥
 .env
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 前端依赖与构建缓存
+node_modules/
+.vite/
+dist/
+
+# IDE / 系统
+.DS_Store
+.idea/
+.vscode/
