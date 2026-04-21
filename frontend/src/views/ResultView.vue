@@ -5,6 +5,7 @@ import ResultSidebar from '../components/ResultSidebar.vue'
 import OverviewCard from '../components/OverviewCard.vue'
 import BudgetCard from '../components/BudgetCard.vue'
 import AttractionMap from '../components/AttractionMap.vue'
+import DailyPlan from '../components/DailyPlan.vue'
 
 const props = defineProps<{ tripPlan: TripPlan }>()
 const emit = defineEmits<{ back: [] }>()
@@ -65,7 +66,12 @@ function handleNavigate(id: string) {
         <section id="map">
           <AttractionMap :attractions="tripPlan.attractions" />
         </section>
-        <section id="daily" class="section-slot">DailyPlan 占位</section>
+        <section id="daily">
+          <DailyPlan
+            :daily-plans="tripPlan.daily_plans"
+            :all-attractions="tripPlan.attractions"
+          />
+        </section>
         <section id="weather" class="section-slot">WeatherCard 占位</section>
       </main>
     </div>
