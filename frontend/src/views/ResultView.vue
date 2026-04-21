@@ -6,6 +6,7 @@ import OverviewCard from '../components/OverviewCard.vue'
 import BudgetCard from '../components/BudgetCard.vue'
 import AttractionMap from '../components/AttractionMap.vue'
 import DailyPlan from '../components/DailyPlan.vue'
+import WeatherCard from '../components/WeatherCard.vue'
 
 const props = defineProps<{ tripPlan: TripPlan }>()
 const emit = defineEmits<{ back: [] }>()
@@ -72,7 +73,13 @@ function handleNavigate(id: string) {
             :all-attractions="tripPlan.attractions"
           />
         </section>
-        <section id="weather" class="section-slot">WeatherCard 占位</section>
+        <section id="weather">
+          <WeatherCard
+            :destination="tripPlan.destination"
+            :weather-summary="tripPlan.weather_summary"
+            :suggestion="tripPlan.suggestion"
+          />
+        </section>
       </main>
     </div>
   </div>
