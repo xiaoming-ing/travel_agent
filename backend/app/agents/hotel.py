@@ -9,10 +9,11 @@
 """
 
 import os
+import math
 import requests
 from dotenv import load_dotenv
 from app.graph.state import TravelState
-from app.schemas import Hotel
+from app.schemas import Hotel, Attraction
 
 load_dotenv()
 
@@ -33,6 +34,45 @@ PRICE_RANGE_MAP= {
     "豪华型酒店": "900-2000元",
     "民宿": "200-600元",
 }
+
+# 按交通方式的打分权重 (w_rating, w_distance, max_km)
+TRANSPORT_WEIGHTS = {
+    "公共交通": (0.6, 0.4, 8.0),
+    "自驾":     (0.4, 0.6, 6.0),
+    "打车":     (0.4, 0.6, 6.0),
+    "步行":     (0.2, 0.8, 3.0),
+}
+DEFAULT_WEIGHTS = (0.5, 0.5, 8.0)
+
+
+def compute_centroid(attractions: list[Attraction]) -> tuple[float, float] | None:
+    """返回景点几何重心 (lng, lat)。空列表返回 None。"""
+    if not attractions:
+        return None
+    n = len(attractions)
+    return (
+        sum(a.longitude for a in attractions) / n,
+        sum(a.latitude for a in attractions) / n,
+    )
+
+
+def haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """两点经纬度之间的公里距离。"""
+    R = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dlng / 2) ** 2
+    return 2 * R * math.asin(math.sqrt(a))
+
+
+def score_hotel(rating: float, distance_km: float, transport: str) -> float:
+    """按交通方式给酒店打分，分越高越优。"""
+    w_r, w_d, max_km = TRANSPORT_WEIGHTS.get(transport, DEFAULT_WEIGHTS)
+    rating_score = rating / 5
+    distance_score = max(0.0, 1 - distance_km / max_km)
+    return w_r * rating_score + w_d * distance_score
+
 
 def fetch_hotels(city:str,hotel_type:str,limit:int = 5) -> list[dict]:
     url = "https://restapi.amap.com/v5/place/text"
@@ -82,3 +122,28 @@ def hotel_node(state:TravelState) -> dict:
     
     return {"hotels_raw":hotels}
 
+
+if __name__ == "__main__":
+    # 1. compute_centroid
+    a1 = Attraction(name="x", address="", longitude=116.0, latitude=39.0,
+                    duration_minutes=0, ticket_price=0, description="")
+    a2 = Attraction(name="y", address="", longitude=116.4, latitude=39.4,
+                    duration_minutes=0, ticket_price=0, description="")
+    lng, lat = compute_centroid([a1, a2])
+    assert abs(lng - 116.2) < 1e-6 and abs(lat - 39.2) < 1e-6, (lng, lat)
+    assert compute_centroid([]) is None
+
+    # 2. haversine：北京天安门(116.40,39.90) <-> 故宫(116.40,39.92) 约 2.2km
+    d = haversine(39.90, 116.40, 39.92, 116.40)
+    assert 2.0 < d < 2.5, d
+
+    # 3. score_hotel
+    s_high = score_hotel(4.5, 2.0, "公共交通")
+    s_low  = score_hotel(3.0, 2.0, "公共交通")
+    assert s_high > s_low, (s_high, s_low)
+    s_near_drive = score_hotel(4.0, 1.0, "自驾")
+    s_far_drive  = score_hotel(4.0, 5.0, "自驾")
+    assert s_near_drive > s_far_drive
+    score_hotel(4.0, 2.0, "热气球")  # 未知 transport 走 DEFAULT_WEIGHTS
+
+    print("[hotel.py self-check] OK")
