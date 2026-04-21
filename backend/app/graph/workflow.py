@@ -14,10 +14,10 @@ builder.add_node("attraction",attraction_node)
 builder.add_node("hotel",hotel_node)
 builder.add_node("itinerary",itinerary_node)
 
-# 扇出：START 同时发往三个数据源（并行执行）
+# 扇出：weather 与 attraction 并行；hotel 依赖 attraction（要算景点重心）
 builder.add_edge(START, "weather")
 builder.add_edge(START, "attraction")
-builder.add_edge(START, "hotel")
+builder.add_edge("attraction", "hotel")
 
 builder.add_edge("weather", "itinerary")
 builder.add_edge("attraction", "itinerary")
