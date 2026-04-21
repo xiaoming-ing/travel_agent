@@ -141,19 +141,43 @@ def parse_to_hotel(poi: dict, hotel_type: str) -> Hotel | None:
         latitude=lat,
     )
 
-def hotel_node(state:TravelState) -> dict:
+def hotel_node(state: TravelState) -> dict:
     req = state["request"]
-    print(f"[HotelAgent]查询{req.destination}的{req.accommodation}")
+    attractions = state.get("attractions_raw", [])
+    print(f"[HotelAgent] 查询 {req.destination} 的 {req.accommodation}（候选景点 {len(attractions)} 个）")
+
+    centroid = compute_centroid(attractions)
 
     try:
-        pois = fetch_hotels(req.destination,req.accommodation,limit=5)
-        hotels = [parse_to_hotel(p,req.accommodation) for p in pois]
-        print(f"[HotelAgent]找到{len(hotels)}家酒店")
+        if centroid is None:
+            print("[HotelAgent] 无景点重心，退回按城市搜")
+            pois = fetch_hotels_by_city(req.destination, req.accommodation, limit=5)
+            hotels = [h for h in (parse_to_hotel(p, req.accommodation) for p in pois) if h]
+            return {"hotels_raw": hotels}
+
+        pois = fetch_hotels_around(centroid, req.accommodation, limit=15)
+        hotels = [h for h in (parse_to_hotel(p, req.accommodation) for p in pois) if h]
+
+        centroid_lng, centroid_lat = centroid
+        scored: list[tuple[float, Hotel]] = []
+        for h in hotels:
+            d = haversine(h.latitude, h.longitude, centroid_lat, centroid_lng)
+            h.distance_note = f"距景点中心 {d:.1f}km"
+            s = score_hotel(h.rating, d, req.transport)
+            scored.append((s, h))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        sorted_hotels = [h for _, h in scored]
+        if sorted_hotels:
+            top = sorted_hotels[0]
+            print(f"[HotelAgent] 共 {len(sorted_hotels)} 家，最优：{top.name}（{top.distance_note}, 评分 {top.rating}）")
+        else:
+            print("[HotelAgent] 周边无可用酒店")
+        return {"hotels_raw": sorted_hotels}
+
     except Exception as e:
-        print(f"[HotelAgent]查询失败：{e}")
-        hotels = []
-    
-    return {"hotels_raw":hotels}
+        print(f"[HotelAgent] 查询失败：{e}")
+        return {"hotels_raw": []}
 
 
 if __name__ == "__main__":
