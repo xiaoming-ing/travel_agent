@@ -3,8 +3,8 @@ import { ref } from 'vue'
 import type { TripRequest, TripPlan } from './types'
 import { planTrip } from './api'
 import FormView from './views/FormView.vue'
+import ResultView from './views/ResultView.vue'
 
-// 有结果就显示结果页，没有就显示表单页 —— 用 v-if 切换，省掉 vue-router
 const tripPlan = ref<TripPlan | null>(null)
 const loading = ref(false)
 
@@ -27,13 +27,7 @@ function goBack() {
 <template>
   <div class="app">
     <FormView v-if="!tripPlan" :loading="loading" @submit="handleSubmit" />
-
-    <!-- 结果页下一步做，这里先放个临时占位 -->
-    <div v-else class="placeholder">
-      <button @click="goBack">← 返回首页</button>
-      <h2>数据已拿到（结果页下一步实现）</h2>
-      <pre>{{ JSON.stringify(tripPlan, null, 2) }}</pre>
-    </div>
+    <ResultView v-else :trip-plan="tripPlan" @back="goBack" />
   </div>
 </template>
 
