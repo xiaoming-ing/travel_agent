@@ -6,7 +6,10 @@ import type { TripRequest } from '../types'
 // props: 父组件告诉我们是否正在提交（按钮 disable）
 // emit: 用户点"生成" → 把表单数据抛给父组件处理
 const props = defineProps<{ loading: boolean }>()
-const emit = defineEmits<{ submit: [req: TripRequest] }>()
+const emit = defineEmits<{ 
+  submit: [req: TripRequest]
+  'submit-chat': [req: TripRequest] 
+}>()
 
 // ===== 表单字段 =====
 // ref 让每个字段都是响应式的，改变会自动触发视图更新
@@ -21,7 +24,7 @@ const extraRequirements = ref('')
 // ===== 下拉选项（和后端约定一致）=====
 const DESTINATIONS = [
   '北京', '上海', '广州', '深圳', '成都', '西安',
-  '杭州', '苏州', '南京', '厦门', '重庆', '青岛', '大理', '三亚',
+  '杭州', '苏州', '南京', '厦门', '重庆', '青岛', '大理', '三亚','合肥'
 ]
 const TRANSPORTS = ['公共交通', '自驾', '打车', '步行']
 const ACCOMMODATIONS = ['经济型酒店', '舒适型酒店', '豪华型酒店', '民宿']
@@ -55,7 +58,16 @@ const canSubmit = computed(() =>
 
 function handleSubmit() {
   if (!canSubmit.value) return
-  emit('submit', {
+  emit('submit', buildRequest())
+}
+// 新增：对话式规划
+function handleSubmitChat() {
+  if (!canSubmit.value) return
+  emit('submit-chat', buildRequest())
+}
+
+function buildRequest(): TripRequest {
+  return {
     destination: destination.value,
     start_date: startDate.value,
     end_date: endDate.value,
@@ -63,7 +75,7 @@ function handleSubmit() {
     accommodation: accommodation.value,
     preferences: preferences.value,
     extra_requirements: extraRequirements.value.trim() || null,
-  })
+  }
 }
 </script>
 
@@ -146,10 +158,14 @@ function handleSubmit() {
     </section>
 
       <!-- ========== 生成按钮 ========== -->
-      <button class="submit" :disabled="!canSubmit" @click="handleSubmit">
-        <span v-if="loading">⏳ 正在生成中...</span>
-        <span v-else>✨ 生成旅行计划</span>
-      </button>
+      <div class="submit-row">
+        <button class="submit secondary" :disabled="!canSubmit || loading" @click="handleSubmit">
+          {{ loading ? '生成中…' : '一次性生成' }}
+        </button>
+        <button class="submit primary" :disabled="!canSubmit || loading" @click="handleSubmitChat">
+          💬 对话式规划
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -264,6 +280,16 @@ textarea {
 }
 .submit:disabled { opacity: 0.6; cursor: not-allowed; }
 .submit:not(:disabled):hover { opacity: 0.9; }
+.submit-row {
+  display: flex;
+  gap: 12px;
+}
+.submit-row .submit { flex: 1; }
+.submit.secondary {
+  background: #fff;
+  color: #667eea;
+  border: 1px solid #667eea;
+}
 
 @media (max-width: 768px) {
   .grid { grid-template-columns: 1fr 1fr; }

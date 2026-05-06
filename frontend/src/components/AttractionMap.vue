@@ -1,17 +1,67 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, shallowRef } from 'vue'
+import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
-import type { Attraction,Hotel } from '../types'
+import type { Attraction, Hotel } from '../types'
 
-const props = defineProps<{ 
-  attractions: Attraction[],
-  hotels?:Hotel[]
- }>()
+const props = defineProps<{
+  attractions: Attraction[]
+  hotels?: Hotel[]
+}>()
 
 const mapContainer = ref<HTMLDivElement | null>(null)
 const errorMsg = ref<string | null>(null)
-// 用 shallowRef 避免 Vue 深度代理大对象（AMap 地图实例非常大，深度代理会卡）
 const mapInstance = shallowRef<any>(null)
+const amapRef = shallowRef<any>(null)     // 存 AMap 命名空间，drawOverlays 里用
+
+// 绘制覆盖物：marker + polyline。抽出来供 onMounted 和 watch 复用
+function drawOverlays() {
+  const map = mapInstance.value
+  const AMap = amapRef.value
+  if (!map || !AMap) return
+
+  map.clearMap()
+
+  // 景点 markers：过滤掉无坐标的，但编号保持和原 attractions 数组一致
+  const attractionMarkers = props.attractions
+    .map((a, idx) => ({ a, idx }))
+    .filter(({ a }) => a.longitude && a.latitude)   // ← 过滤 (0,0)
+    .map(({ a, idx }) => {
+      return new AMap.Marker({
+        position: [a.longitude, a.latitude],
+        content: `<div class="amap-num-marker">${idx + 1}</div>`,
+        offset: new AMap.Pixel(-14, -14),
+        title: a.name,
+      })
+    })
+
+  // 路径连线：同样过滤无坐标的点
+  const validPath = props.attractions
+    .filter((a) => a.longitude && a.latitude)
+    .map((a) => [a.longitude, a.latitude])
+  const polyline = new AMap.Polyline({
+    path: validPath,
+    strokeColor: '#4a5fdc',
+    strokeWeight: 4,
+    strokeOpacity: 0.7,
+    lineJoin: 'round',
+  })
+
+  // 酒店 markers：原本就有 filter，保持
+  const hotelMarkers = (props.hotels ?? [])
+    .filter((h) => h.longitude && h.latitude)
+    .map((h, idx) => {
+      return new AMap.Marker({
+        position: [h.longitude, h.latitude],
+        content: `<div class="amap-hotel-marker">H${idx + 1}</div>`,
+        offset: new AMap.Pixel(-14, -14),
+        title: `${h.name}  ⭐${h.rating}  ${h.price_range}`,
+      })
+    })
+
+  map.add([...attractionMarkers, ...hotelMarkers, polyline])
+  map.setFitView()
+}
+
 
 onMounted(async () => {
   try {
@@ -20,59 +70,31 @@ onMounted(async () => {
       version: '2.0',
       plugins: ['AMap.Polyline'],
     })
+    amapRef.value = AMap
 
     if (!mapContainer.value) return
-
-    const map = new AMap.Map(mapContainer.value, {
-      zoom: 11,
-      viewMode: '2D',
-    })
+    const map = new AMap.Map(mapContainer.value, { zoom: 11, viewMode: '2D' })
     mapInstance.value = map
 
-    // 创建编号 Marker
-    const attractionMarkers = props.attractions.map((a, idx) => {
-      const num = idx + 1
-      return new AMap.Marker({
-        position: [a.longitude, a.latitude],
-        content: `<div class="amap-num-marker">${num}</div>`,
-        offset: new AMap.Pixel(-14, -14),
-        title: a.name,
-      })
-    })
-
-    // 景点连线
-    const polyline = new AMap.Polyline({
-      path: props.attractions.map((a) => [a.longitude, a.latitude]),
-      strokeColor: '#4a5fdc',
-      strokeWeight: 4,
-      strokeOpacity: 0.7,
-      lineJoin: 'round',
-    })
-
-    // 酒店 Marker（红色 H 编号，和景点区分）
-    const hotelMarkers = (props.hotels ?? [])
-    .filter((h)=> h.longitude && h.latitude)
-    .map((h,idx)=>{
-      return new AMap.Marker({
-        position: [h.longitude, h.latitude],
-        content: `<div class="amap-hotel-marker">H${idx + 1}</div>`,
-        offset: new AMap.Pixel(-14, -14),
-        title: `${h.name}  ⭐${h.rating}  ${h.price_range}`,   // 鼠标悬停显示
-      })
-    })
-
-    map.add([...attractionMarkers, ...hotelMarkers, polyline])
-    map.setFitView()
+    drawOverlays()
   } catch (e: any) {
     errorMsg.value = `地图加载失败：${e.message || '未知错误'}`
     console.error('[AttractionMap]', e)
   }
 })
 
+// 关键：props 变化时重绘地图
+watch(
+  () => [props.attractions, props.hotels],
+  () => drawOverlays(),
+  { deep: true },
+)
+
 onUnmounted(() => {
   mapInstance.value?.destroy?.()
 })
 </script>
+
 
 <template>
   <div class="map-card">

@@ -17,7 +17,7 @@ class Attraction(BaseModel):
     latitude:float = Field(...,description="纬度")
     duration_minutes:int = Field(default=120,description="建议游览时长（分钟）")
     ticket_price: float = Field(default=0,description="门票价格（元），免费填0")
-    description: str = Field(...,description="景点亮点简介，1-2句即可")
+    description: str = Field(...,description="景点亮点简介，1-2句即可，禁止在文字内使用英文双引号\"，改用中文引号「」")
     image_url:Optional[str] = Field(default=None,description="景点图片URL")
 
 

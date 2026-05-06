@@ -53,7 +53,6 @@ function attractionsOfDay(day: DailyPlan) {
           <div class="info-box">
             <div><strong>📝 行程描述：</strong>{{ d.description }}</div>
             <div><strong>🚌 交通方式：</strong>{{ d.transport }}</div>
-            <div><strong>🏨 住宿：</strong>{{ d.accommodation }}</div>
           </div>
 
           <!-- 景点安排 -->

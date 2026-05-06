@@ -1,7 +1,6 @@
 import os
 import requests
 from app.graph.state import TravelState
-from app.agents.supervisor import llm
 from langchain_core.messages import SystemMessage
 
 API_KEY=os.getenv("WEATHER_API_KEY")

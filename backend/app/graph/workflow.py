@@ -1,30 +1,90 @@
+"""
+两阶段 Agent 执行器
 
+Phase 1:React Ageent 根据用户需求自主调用工具（search_attractions/get_weather/search_hotels）
+    收集规划所需数据。LLM决定调什么、顺序、参数
+Phase 2:用Phase 1所收集到的原始数据，调structured output LLM 生成最终TripPlan.
+"""
 
-from langgraph.graph import StateGraph,START,END
-from app.graph.state import TravelState
-from app.agents.weather import weather_node
-from app.agents.attraction import attraction_node
-from app.agents.hotel import hotel_node
-from app.agents.itinerary import itinerary_node
+from dotenv import load_dotenv
+from langchain_deepseek import ChatDeepSeek
+from langchain.agents import create_agent
+from app.agents.tools import ALL_TOOLS,reset_session, get_session
+from app.schemas import TripRequest
+from langchain_core.messages import HumanMessage, SystemMessage
+from app.agents.itinerary import generate_plan, _fallback_plan
 
-builder = StateGraph(TravelState)
+load_dotenv()
 
-builder.add_node("weather",weather_node)
-builder.add_node("attraction",attraction_node)
-builder.add_node("hotel",hotel_node)
-builder.add_node("itinerary",itinerary_node)
+# phase 1用的LLM-temperature低，让工具调用决策更稳定
+agent_llm = ChatDeepSeek(model="deepseek-chat",temperature=0.2)
 
-# 扇出：weather 与 attraction 并行；hotel 依赖 attraction（要算景点重心）
-builder.add_edge(START, "weather")
-builder.add_edge(START, "attraction")
-builder.add_edge("attraction", "hotel")
+AGENT_SYSTEM_PROMPT= """你是一个旅行数据收集助手。用户会提供目的地、日期、交通/住宿偏好。
+你的任务是调用工具收集规划行程所需的数据，**不要自己编行程**。
 
-#["weather","hotel"]是等所有上游完成了再执行
-# builder.add_edge("weather", "itinerary")
-# builder.add_edge("hotel", "itinerary") # 会执行两次，weather完成了执行一次，hotel完成了再执行一次
-builder.add_edge(["weather","hotel"], "itinerary")
+可用工具：
+- search_attractions(city, limit): 搜景点
+    * preferences 必填！从用户提供的偏好列表里挑对应的传入（例如用户说"美食"，就传 ["美食"]）
+    * 取值：历史文化 / 自然风光 / 美食 / 购物 / 艺术 / 休闲
+    * 多个偏好一起传会搜到多种类型
+- get_weather(city, trip_days): 查天气
+- search_hotels(accommodation_type, transport): 搜酒店（必须先查景点）
 
+建议流程：
+1. 先调 search_attractions 拿景点（规划基础）
+2. 调 get_weather 拿天气
+3. 调 search_hotels 拿酒店（前提：景点已查到）
+4. 数据齐备后直接回复"数据收集完毕"即可
 
-builder.add_edge("itinerary", END)
+规则：
+- 同一工具不要重复调（除非参数不同）
+- 总调用次数不超过6次
+- 不要在回复里包含行程规划，那是后续步骤工作。
 
-graph = builder.compile()
+"""
+
+agent = create_agent(agent_llm,tools=ALL_TOOLS)
+
+async def run_workflow(request:TripRequest) -> dict:
+    """对外入口：输入TripRequest,返回{"trip_plan":dict}"""
+    reset_session()
+
+    user_msg = (
+        f"目的地：{request.destination}\n"
+        f"日期：{request.start_date} 至 {request.end_date}（共 {request.trip_days} 天）\n"
+        f"交通方式：{request.transport}\n"
+        f"住宿方式：{request.accommodation}\n"
+        f"偏好：{','.join(request.preferences) or '无'}\n"
+        f"额外要求：{request.extra_requirements or '无'}\n\n"
+        f"请调用工具收集规划所需数据。"
+    )
+
+    # Phase 1:数据收集
+    print("[Phase 1] Agent 开始工作。。。")
+    try:
+        await agent.ainvoke(
+            {
+                "messages":[SystemMessage(content=AGENT_SYSTEM_PROMPT),HumanMessage(content=user_msg)]
+            },
+            config={"recursion_limit":15}
+        )
+    except Exception as e:
+        print(f"[Phase 1]失败：{e}")
+        return {"trip_plan":_fallback_plan(request,reson=f"数据收集阶段失败：{e}")}
+    
+    # Phase 2: 结构化LLM生成行程
+    data = get_session()
+    if not data["attractions"]:
+        return {"trip_plan":_fallback_plan(request, reason="景点数据暂不可用，请稍后重试")}
+    
+    try:
+        plan = await generate_plan(
+            request=request,
+            attractions=data["attractions"],
+            hotels=data["hotels"],
+            weather=data["weather"],
+        )
+        return {"trip_plan":plan}
+    except Exception as e:
+        print(f"[Phase 2] 失败：{e}")
+        return {"trip_plan": _fallback_plan(request, reason=f"AI 行程生成失败：{e}")}

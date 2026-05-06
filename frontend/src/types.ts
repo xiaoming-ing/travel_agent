@@ -71,3 +71,25 @@ export interface TripPlan {
   hotels: Hotel[]           // 推荐住宿Top3，按交通方式+距离+评分综合排序
   weather_summary: string
 }
+
+export interface ChatResponse {
+  thread_id: string
+  status:"need_input" | 'done'
+  interrupt_type?:string
+  question?:string | null
+  trip_plan: TripPlan | null
+}
+
+export interface ChatMessage {
+  role: 'agent' | 'user' | 'system'
+  content: string
+  timestamp:number
+}
+
+export interface ConversationItem {
+  thread_id: string
+  title: string
+  destination: string
+  created_at: string
+  status: 'active' | 'done'
+}
