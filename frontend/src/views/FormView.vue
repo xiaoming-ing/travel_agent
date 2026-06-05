@@ -5,15 +5,13 @@ import type { TripRequest } from '../types'
 // ===== 父子通信 =====
 // props: 父组件告诉我们是否正在提交（按钮 disable）
 // emit: 用户点"生成" → 把表单数据抛给父组件处理
-const props = defineProps<{ loading: boolean }>()
-const emit = defineEmits<{ 
-  submit: [req: TripRequest]
-  'submit-chat': [req: TripRequest] 
+const emit = defineEmits<{
+  'submit-chat': [req: TripRequest]
 }>()
 
 // ===== 表单字段 =====
 // ref 让每个字段都是响应式的，改变会自动触发视图更新
-const destination = ref('北京')
+const destination = ref('')
 const startDate = ref('')
 const endDate = ref('')
 const transport = ref('公共交通')
@@ -22,10 +20,6 @@ const preferences = ref<string[]>(['自然风光'])    // 多选：字符串数�
 const extraRequirements = ref('')
 
 // ===== 下拉选项（和后端约定一致）=====
-const DESTINATIONS = [
-  '北京', '上海', '广州', '深圳', '成都', '西安',
-  '杭州', '苏州', '南京', '厦门', '重庆', '青岛', '大理', '三亚','合肥'
-]
 const TRANSPORTS = ['公共交通', '自驾', '打车', '步行']
 const ACCOMMODATIONS = ['经济型酒店', '舒适型酒店', '豪华型酒店', '民宿']
 const PREFERENCE_OPTIONS = [
@@ -52,15 +46,9 @@ const canSubmit = computed(() =>
   destination.value &&
   startDate.value &&
   endDate.value &&
-  tripDays.value > 0 &&
-  !props.loading
+  tripDays.value > 0
 )
 
-function handleSubmit() {
-  if (!canSubmit.value) return
-  emit('submit', buildRequest())
-}
-// 新增：对话式规划
 function handleSubmitChat() {
   if (!canSubmit.value) return
   emit('submit-chat', buildRequest())
@@ -93,9 +81,7 @@ function buildRequest(): TripRequest {
       <div class="grid">
         <div class="field">
           <label><span class="req">*</span> 目的地城市</label>
-          <select v-model="destination">
-            <option v-for="c in DESTINATIONS" :key="c" :value="c">🏙️ {{ c }}</option>
-          </select>
+          <input type="text" v-model="destination" placeholder="请输入城市，如：成都" />
         </div>
 
         <div class="field">
@@ -159,10 +145,7 @@ function buildRequest(): TripRequest {
 
       <!-- ========== 生成按钮 ========== -->
       <div class="submit-row">
-        <button class="submit secondary" :disabled="!canSubmit || loading" @click="handleSubmit">
-          {{ loading ? '生成中…' : '一次性生成' }}
-        </button>
-        <button class="submit primary" :disabled="!canSubmit || loading" @click="handleSubmitChat">
+        <button class="submit primary" :disabled="!canSubmit" @click="handleSubmitChat">
           💬 对话式规划
         </button>
       </div>
@@ -221,6 +204,7 @@ function buildRequest(): TripRequest {
 
 .field select,
 .field input[type="date"],
+.field input[type="text"],
 textarea {
   width: 100%;
   padding: 10px 12px;

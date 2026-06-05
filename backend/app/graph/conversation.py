@@ -15,6 +15,7 @@ from langgraph.graph import StateGraph,START,END
 from app.agents.tools import get_session
 from app.agents.revise_tools import apply_revision
 
+# 整个图的共享状态
 class ConversationState(TypedDict):
     request: TripRequest
     trip_plan: Optional[dict]

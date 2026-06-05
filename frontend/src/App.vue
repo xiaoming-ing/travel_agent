@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import type { TripRequest, TripPlan, ConversationItem } from './types'
-import { planTrip, fetchConversation, fetchConvState } from './api'
+import { fetchConversation, fetchConvState } from './api'
 import ConversationList from './components/ConversationList.vue'
 import FormView from './views/FormView.vue'
 import ChatView from './views/ChatView.vue'
@@ -16,20 +16,6 @@ const initialRequest = ref<TripRequest | null>(null)
 const activeThreadId = ref<string | null>(null)
 
 const sidebarRef = ref<InstanceType<typeof ConversationList> | null>(null)
-
-// 一次性生成
-async function handleSubmit(req: TripRequest) {
-  loading.value = true
-  try {
-    tripPlan.value = await planTrip(req)
-    activeThreadId.value = null
-    mode.value = 'result'
-  } catch (e: any) {
-    alert(`生成失败：${e.message}`)
-  } finally {
-    loading.value = false
-  }
-}
 
 // 对话式规划
 function handleSubmitChat(req: TripRequest) {
