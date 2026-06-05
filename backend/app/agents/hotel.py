@@ -51,8 +51,8 @@ def compute_centroid(attractions: list[Attraction]) -> tuple[float, float] | Non
         return None
     n = len(attractions)
     return (
-        sum(a.longitude for a in attractions) / n,
-        sum(a.latitude for a in attractions) / n,
+        sum(loc.longitude for loc in attractions) / n,
+        sum(loc.latitude for loc in attractions) / n
     )
 
 
@@ -68,10 +68,10 @@ def haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 
 def score_hotel(rating: float, distance_km: float, transport: str) -> float:
     """按交通方式给酒店打分，分越高越优。"""
-    w_r, w_d, max_km = TRANSPORT_WEIGHTS.get(transport, DEFAULT_WEIGHTS)
-    rating_score = rating / 5 # 归一化到[0,1]
-    distance_score = max(0.0, 1 - distance_km / max_km) # 越近越接近1，超过max_km就是0
-    return w_r * rating_score + w_d * distance_score # 加权求和
+    w_rating, w_distance, max_km = TRANSPORT_WEIGHTS.get(transport,DEFAULT_WEIGHTS)
+    rating_score = rating / 5.0
+    distance_score = max(0, 1 - distance_km / max_km)
+    return w_rating * rating_score + w_distance * distance_score
 
 
 def fetch_hotels_around(centroid: tuple[float, float], hotel_type: str, limit: int = 15) -> list[dict]:

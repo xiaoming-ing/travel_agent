@@ -14,6 +14,7 @@ from app.graph.workflow import run_workflow
 from langgraph.graph import StateGraph,START,END
 from app.agents.tools import get_session
 from app.agents.revise_tools import apply_revision
+from datetime import date,datetime
 
 # 整个图的共享状态
 class ConversationState(TypedDict):
@@ -26,6 +27,20 @@ class ConversationState(TypedDict):
 async def clarify_node(state:ConversationState) -> dict:
     """若用户表单里 preferences为空，interrupt问一句。有值直接放行。"""
     req = state["request"]
+
+    # 校验时间
+    if req.start_date < date.today():
+        user_answer: str = interrupt({
+            "type":"clarify_date",
+            "question":(
+                f"行程时间不在未来，来规划{req.destination}{req.trip_days}天的行程。"
+                
+            )
+        })
+        new_date = datetime.strptime(user_answer.strip(),"%Y-%m-%d").date()
+        new_req = req.model_copy(update={"start_date":new_date})
+        return {"request":new_req}
+    
     if req.preferences:
         return {}
     
@@ -45,8 +60,10 @@ async def clarify_node(state:ConversationState) -> dict:
     return {"request":new_req}
 
 async def plan_node(state:ConversationState) -> dict:
+    print("===plan_node收到的 state===", state["request"])
     result = await run_workflow(state["request"])
     session = get_session()
+    print("Phase1收集到的景点数量===", len(session.get("attractions", [])))
     return {
         "trip_plan":result.get("trip_plan"),
         "raw_attractions":session.get("attractions",[]),
@@ -69,7 +86,7 @@ async def feedback_node(state:ConversationState) -> dict:
 def should_revise(state:ConversationState) -> str:
     """条件边：路由到revise或END。"""
     feedback = (state.get("last_feedback") or "").strip().lower()
-    done_words = {"满意","ok","可以","没问题","完成","done","结束"}
+    done_words = {"满意","ok","可以","没问题","完成","done","结束","好"}
     if feedback in done_words:
         return END
     return "revise"

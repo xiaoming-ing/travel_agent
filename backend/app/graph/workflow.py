@@ -25,7 +25,7 @@ AGENT_SYSTEM_PROMPT= """你是一个旅行数据收集助手。用户会提供�
 可用工具：
 - search_attractions(city, limit): 搜景点
     * preferences 必填！从用户提供的偏好列表里挑对应的传入（例如用户说"美食"，就传 ["美食"]）
-    * 取值：历史文化 / 自然风光 / 美食 / 购物 / 艺术 / 休闲
+    * 取值：历史文化 / 自然风光 / 美食 / 购物 / 艺术 / 休闲 / 亲子
     * 多个偏好一起传会搜到多种类型
 - get_weather(city, trip_days): 查天气
 - search_hotels(accommodation_type, transport): 搜酒店（必须先查景点）

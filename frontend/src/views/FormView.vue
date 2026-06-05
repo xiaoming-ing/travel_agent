@@ -29,6 +29,8 @@ const PREFERENCE_OPTIONS = [
   { key: '购物', icon: '🛍️' },
   { key: '艺术', icon: '🎨' },
   { key: '休闲', icon: '☕' },
+  { key: '亲子', icon: '👶' },
+
 ]
 
 // ===== 自动计算旅行天数 =====
