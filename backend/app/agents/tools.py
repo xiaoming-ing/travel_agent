@@ -1,6 +1,6 @@
 
 from app.agents.weather import lookup_location_id,fetch_weather,pick_endpoint_days
-from app.agents.attraction import fetch_attractions,parse_to_attraction,resolve_poi_types
+from app.agents.attraction import fetch_attractions,parse_to_attraction,resolve_poi_types,search_attraction_by_name
 from app.agents.hotel import fetch_hotels_around,parse_to_hotel,compute_centroid,haversine,score_hotel
 from langchain_core.tools import tool
 import contextvars
@@ -118,5 +118,27 @@ def search_hotels(accommodation_type:str,transport:str="公共交通") -> str:
     ]
     return "Top 5 酒店：\n" + "\n".join(lines)
 
+@tool
+def search_specific_place(city: str,keyword:str) -> str:
+    """当用户在【额外要求】里提到具体地点名字或可归类的地点类型
+    （比如"想去夫子庙""想去海边""想逛古镇"),用这个工具按关键词精确搜索，
+    结果会自动追加进候选景点列表（不会覆盖已有结果）。若关键词是"日出""星空"这类不具体地点的体验型描述，不要调用此工具。
 
-ALL_TOOLS = [search_attractions, get_weather, search_hotels]
+    Args:
+        city:城市名
+        keyword: 具体地名，或翻译后的地点类型关键词（如"海边"->"海滨")
+    """
+    poi = search_attraction_by_name(city,keyword)
+    attr = parse_to_attraction(poi) if poi else None
+    if not attr:
+        return f"未找到与'{keyword}'相关的地点，可能该城市没有此类地点"
+    session = get_session()
+    existing = session.get("attractions",[])
+    if any(a.name == attr.name for a in existing):
+        return f"'{attr.name}'已在候选列表中，无需重复添加"
+    
+    session["attractions"] = existing + [attr]
+    return f"已找到'{keyword}'对应地点：{attr.name}({attr.address}),已加入候选列表"
+
+
+ALL_TOOLS = [search_attractions, get_weather, search_hotels, search_specific_place]

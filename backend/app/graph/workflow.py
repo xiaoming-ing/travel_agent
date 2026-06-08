@@ -29,12 +29,14 @@ AGENT_SYSTEM_PROMPT= """你是一个旅行数据收集助手。用户会提供�
     * 多个偏好一起传会搜到多种类型
 - get_weather(city, trip_days): 查天气
 - search_hotels(accommodation_type, transport): 搜酒店（必须先查景点）
+- search_specific_place(city,keyword): 根据具体地名搜景点
 
 建议流程：
 1. 先调 search_attractions 拿景点（规划基础）
-2. 调 get_weather 拿天气
-3. 调 search_hotels 拿酒店（前提：景点已查到）
-4. 数据齐备后直接回复"数据收集完毕"即可
+2. 若【额外要求】中提到了具体地名（如"想去夫子庙")或可归类的地点类型(如"想去海边"--翻译成"海滨"再搜),调search_specific_place补充
+3. 调 get_weather 拿天气
+4 调 search_hotels 拿酒店（前提：景点已查到）
+5. 数据齐备后直接回复"数据收集完毕"即可
 
 规则：
 - 同一工具不要重复调（除非参数不同）
