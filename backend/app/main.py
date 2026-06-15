@@ -3,10 +3,8 @@ load_dotenv()  # 必须在任何 app.* import 之前，否则 weather.py 等模�
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
-import traceback
 
-from app.graph.workflow import run_workflow
-from app.schemas import TripPlan,TripRequest
+from app.schemas import TripRequest
 
 from contextlib import asynccontextmanager
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
@@ -15,7 +13,7 @@ from pydantic import BaseModel
 import uuid
 from langgraph.types import Command
 from fastapi.responses import StreamingResponse
-from app.graph.streaming import stream_graph
+from app.graph.streaming import stream_graph, extract_interrupt
 from app.graph.conversation_store import (
     init_table, create_conversation, complete_conversation,
     list_conversations, get_conversation,delete_conversation
@@ -47,102 +45,11 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-@app.post("/api/plan",response_model=TripPlan)
-async def plan(req:TripRequest):
-    """
-    生成完整旅行计划
-
-    - 入参 TripRequest:FastAPI 自动按schema校验，缺必填字段会返回422
-    - 出参 Tripplan:response_model指定后，FastAPI会过滤多余字段、按schema序列化
-    """
-
-    try:
-        # ainvoke:异步跑完整个图，返回最终state
-        # （如果以后想要“正在查天气。。。”这种流式进度，可以换成astream)
-        final_state = await run_workflow(req)
-    except Exception as e:
-        # LanGraph里任何节点抛异常都会冒到这
-        traceback.print_exc()
-        raise HTTPException(status_code=500,detail=f"生成行程失败：{e}")
-    
-    trip_plan = final_state.get("trip_plan")
-    if not trip_plan:
-        raise HTTPException(status_code=500,detail="行程生成结果为空")
-    
-    return trip_plan
-
 class ChatStartBody(BaseModel):
     request:TripRequest
 class ChatResumeBody(BaseModel):
     thread_id:str
     answer:str
-
-def _extract_interrupt(state) -> dict | None:
-    """如果图停在interrupt,返回interrupt payload,否则返回None"""
-    if not state.tasks:
-        return None
-    for task in state.tasks:
-        if task.interrupts:
-            return task.interrupts[0].value
-    return None
-
-@app.post("/api/chat/start")
-async def chat_start(body:ChatStartBody):
-    """开新会话。返回要么need_input（附带Agent的提问），要么done(附带行程)。"""
-    thread_id = str(uuid.uuid4)
-    config = {"configurable":{"thread_id":thread_id}}
-    graph = app.state.conv_graph
-
-    try:
-        result = await graph.ainvoke({"request":body.request},config=config)
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500,detail=f"会话启动失败：{e}")
-    
-    state = await graph.aget_state(config)
-    interrupt_payload = _extract_interrupt(state)
-    if interrupt_payload:
-        return {
-            "thread_id":thread_id,
-            "status":"need_input",
-            "interrupt_type":interrupt_payload.get("type"),
-            "question":interrupt_payload.get("question"),
-            "trip_plan":interrupt_payload.get("trip_plan")
-        }
-
-    return {
-        "thread_id": thread_id,
-        "status": "done",
-        "trip_plan": result.get("trip_plan"),
-    }
-
-@app.post("/api/chat/resume")
-async def chat_resume(body:ChatResumeBody):
-    """续跑已暂停的会话，用用户的答复恢复图执行"""
-    config = {"configurable":{"thread_id":body.thread_id}}
-    graph  = app.state.conv_graph
-
-    try:
-        result = await graph.ainvoke(Command(resume=body.answer),config=config)
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500,detail=f"会话续跑失败：{e}")
-    
-    state = await graph.aget_state(config)
-    interrupt_payload = _extract_interrupt(state)
-    if interrupt_payload:
-        return {
-            "thread_id": body.thread_id,
-            "status": "need_input",
-            "interrupt_type": interrupt_payload.get("type"),
-            "question": interrupt_payload.get("question"),
-            "trip_plan":interrupt_payload.get("trip_plan")
-        }
-    return {
-        "thread_id": body.thread_id,
-        "status": "done",
-        "trip_plan": result.get("trip_plan"),
-    }
 
 @app.post("/api/chat/start-stream")
 async def chat_start_stream(body:ChatStartBody):
@@ -217,13 +124,13 @@ async def get_conv_state(thread_id: str):
         raise HTTPException(status_code=404, detail="对话不存在")
 
     # 有 interrupt = 等用户输入
-    for task in (state.tasks or []):
-        if task.interrupts:
-            return {
-                "status": "need_input",
-                "question": task.interrupts[0].value.get("question"),
-                "trip_plan": task.interrupts[0].value.get("trip_plan"),
-            }
+    interrupt_payload = extract_interrupt(state)
+    if interrupt_payload:
+        return {
+            "status": "need_input",
+            "question": interrupt_payload.get("question"),
+            "trip_plan": interrupt_payload.get("trip_plan"),
+        }
 
     # 有 trip_plan = 完成了
     trip_plan = state.values.get("trip_plan")

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
-import type { TripRequest, TripPlan, ChatMessage, ChatResponse } from '../types'
+import type { TripRequest, TripPlan, ChatMessage } from '../types'
 import { startChatStream, resumeChatStream, completeConversation } from '../api'
 import type { StreamEvent } from '../api'
 

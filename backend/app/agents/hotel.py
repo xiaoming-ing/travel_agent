@@ -12,7 +12,6 @@ import os
 import math
 import requests
 from dotenv import load_dotenv
-from app.graph.state import TravelState
 from app.schemas import Hotel, Attraction
 
 load_dotenv()
@@ -95,25 +94,6 @@ def fetch_hotels_around(centroid: tuple[float, float], hotel_type: str, limit: i
     return data.get("pois", [])
 
 
-def fetch_hotels_by_city(city: str, hotel_type: str, limit: int = 5) -> list[dict]:
-    """退化路径：景点重心算不出来时，按城市全市搜（保留旧行为）。"""
-    url = "https://restapi.amap.com/v5/place/text"
-    params = {
-        "key": API_KEY,
-        "types": ACCOMMODATION_TYPE_MAP.get(hotel_type, "100100"),
-        "region": city,
-        "city_limit": "true",
-        "page_size": limit,
-        "page_num": 1,
-        "show_fields": "business",
-    }
-    resp = requests.get(url, params=params, timeout=10)
-    data = resp.json()
-    if data.get("status") != "1":
-        return []
-    return data.get("pois", [])
-
-
 def parse_to_hotel(poi: dict, hotel_type: str) -> Hotel | None:
     """高德 POI -> Hotel schema。location 缺失返回 None。"""
     loc = poi.get("location", "")
@@ -136,49 +116,10 @@ def parse_to_hotel(poi: dict, hotel_type: str) -> Hotel | None:
         type=hotel_type,
         price_range=PRICE_RANGE_MAP.get(hotel_type, "300-500元"),
         rating=rating,
-        distance_note="",                      # hotel_node 里再填
+        distance_note="",
         longitude=lng,
         latitude=lat,
     )
-
-def hotel_node(state: TravelState) -> dict:
-    req = state["request"]
-    attractions = state.get("attractions_raw", [])
-    print(f"[HotelAgent] 查询 {req.destination} 的 {req.accommodation}（候选景点 {len(attractions)} 个）")
-
-    centroid = compute_centroid(attractions)
-
-    try:
-        if centroid is None:
-            print("[HotelAgent] 无景点重心，退回按城市搜")
-            pois = fetch_hotels_by_city(req.destination, req.accommodation, limit=5)
-            hotels = [h for h in (parse_to_hotel(p, req.accommodation) for p in pois) if h]
-            return {"hotels_raw": hotels}
-
-        pois = fetch_hotels_around(centroid, req.accommodation, limit=15)
-        hotels = [h for h in (parse_to_hotel(p, req.accommodation) for p in pois) if h]
-
-        centroid_lng, centroid_lat = centroid
-        scored: list[tuple[float, Hotel]] = []
-        for h in hotels:
-            d = haversine(h.latitude, h.longitude, centroid_lat, centroid_lng)
-            h.distance_note = f"距景点中心 {d:.1f}km"
-            s = score_hotel(h.rating, d, req.transport)
-            scored.append((s, h))
-
-        scored.sort(key=lambda x: x[0], reverse=True)
-        sorted_hotels = [h for _, h in scored]
-        if sorted_hotels:
-            top = sorted_hotels[0]
-            print(f"[HotelAgent] 共 {len(sorted_hotels)} 家，最优：{top.name}（{top.distance_note}, 评分 {top.rating}）")
-        else:
-            print("[HotelAgent] 周边无可用酒店")
-        return {"hotels_raw": sorted_hotels}
-
-    except Exception as e:
-        print(f"[HotelAgent] 查询失败：{e}")
-        return {"hotels_raw": []}
-
 
 if __name__ == "__main__":
     # 1. compute_centroid

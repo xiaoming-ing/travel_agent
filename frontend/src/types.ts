@@ -72,14 +72,6 @@ export interface TripPlan {
   weather_summary: string
 }
 
-export interface ChatResponse {
-  thread_id: string
-  status:"need_input" | 'done'
-  interrupt_type?:string
-  question?:string | null
-  trip_plan: TripPlan | null
-}
-
 export interface ChatMessage {
   role: 'agent' | 'user' | 'system'
   content: string

@@ -1,7 +1,5 @@
 import os
 import requests
-from app.graph.state import TravelState
-from langchain_core.messages import SystemMessage
 
 API_KEY=os.getenv("WEATHER_API_KEY")
 API_HOST=os.getenv("WEATHER_API_HOST")
@@ -46,24 +44,4 @@ def fetch_weather(location_id:str,days:int=7) -> list[dict]:
         for d in data.get("daily", [])
     ]
 
-def weather_node(state:TravelState) -> dict:
-    """只做数据采集，不做语言总结"""
-    req = state["request"]
-
-    destination = req.destination
-    trip_days = req.trip_days
-
-    query_days = pick_endpoint_days(trip_days)
-    print(f"[WeatherAgent] {destination} 出行{trip_days}天，查询{query_days}天天气")
-
-    try:
-        location_id = lookup_location_id(destination)
-        if not location_id:
-            print(f"[WeatherAgent] 找不到城市")
-            return {"weather_raw":[]}
-        forcast = fetch_weather(location_id,days=query_days)
-        return {"weather_raw": forcast[:trip_days]} # 只取实际出行天数
-    except Exception as e:
-        print(f"[WeatherAgent] 查询失败: {e}")
-        return {"weather_raw":[]}
     

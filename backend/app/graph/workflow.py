@@ -72,7 +72,7 @@ async def run_workflow(request:TripRequest) -> dict:
         )
     except Exception as e:
         print(f"[Phase 1]失败：{e}")
-        return {"trip_plan":_fallback_plan(request,reson=f"数据收集阶段失败：{e}")}
+        return {"trip_plan":_fallback_plan(request,reason=f"数据收集阶段失败：{e}")}
     
     # Phase 2: 结构化LLM生成行程
     data = get_session()

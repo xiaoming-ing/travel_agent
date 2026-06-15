@@ -20,7 +20,7 @@ TOOL_MESSAGES:dict[str,tuple[str,str]] = {
     "search_attraction_by_name":("",                          ""),   # 静默，太细不推
 }
 
-def _extract_interrupt(state) -> dict | None:
+def extract_interrupt(state) -> dict | None:
     if not state.tasks:
         return None
     for task in state.tasks:
@@ -66,7 +66,7 @@ async def stream_graph(
     
     # 结束状态检查
     state = await graph.aget_state(config)
-    interrupt_payload = _extract_interrupt(state)
+    interrupt_payload = extract_interrupt(state)
     thread_id = config["configurable"]["thread_id"]
 
     if interrupt_payload:

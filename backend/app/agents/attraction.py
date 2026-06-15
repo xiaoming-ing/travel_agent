@@ -7,7 +7,6 @@
 import os
 import requests
 from dotenv import load_dotenv
-from app.graph.state import TravelState
 from app.schemas import Attraction
 
 load_dotenv()
@@ -75,28 +74,11 @@ def parse_to_attraction(poi:dict) -> Attraction | None:
         latitude=float(lat),
         # 下面三个字段高德不提供，先给默认值；itinerary agent 会基于名称补全
         duration_minutes=120,
-        tricket_price=0,
+        ticket_price=0,
         description="",
         image_url=image_url
     )
 
-def attraction_node(state:TravelState) -> dict:
-    """LangGraph节点。从state读request,返回要合并进state的字段"""
-    req = state["request"]
-    print(f"[AttractionAgent]查询{req.destination}的景点")
-
-    try:
-        pois = fetch_attractions(req.destination,limit=10)
-        attractions: list[Attraction] = []
-        for p in pois:
-            a = parse_to_attraction(p)
-            if a:
-                attractions.append(a)
-        print(f"[AttractionAgent]找到{len(attractions)}个景点")
-    except Exception as e:
-        print(f"[AttractionAgent]查询失败：{e}")
-        attractions = []
-    return {"attractions_raw": attractions}
 
 def search_attraction_by_name(city: str, keyword: str) -> dict | None:
     """按用户给的名字在城市里精确查一个 POI。优先取完全同名，找不到取最相似的第一个。"""
@@ -121,6 +103,3 @@ def search_attraction_by_name(city: str, keyword: str) -> dict | None:
             return poi
     # 退而求其次取第一个模糊匹配
     return pois[0] if pois else None
-
-# if __name__ == '__main__':
-#     attraction_node({"destination":"北京","dates":{"days":3},"budget":5000}) 
