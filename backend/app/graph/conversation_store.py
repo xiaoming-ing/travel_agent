@@ -48,7 +48,7 @@ async def list_conversations(limit:int = 30) -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row # 可以像dict一样访问
         async with db.execute(
-            "SELECT thread_id, title, destination, create_at,status "
+            "SELECT thread_id, title, destination, create_at AS created_at, status "
             "FROM conversations WHERE status!='deleted' "
             "ORDER BY create_at DESC LIMIT ?",
             (limit,),

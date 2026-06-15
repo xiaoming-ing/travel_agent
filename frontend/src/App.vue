@@ -14,12 +14,16 @@ const loading = ref(false)
 const tripPlan = ref<TripPlan | null>(null)
 const initialRequest = ref<TripRequest | null>(null)
 const activeThreadId = ref<string | null>(null)
+const resumeThreadId = ref<string | null>(null)
+const resumePlan = ref<TripPlan | null>(null)
 
 const sidebarRef = ref<InstanceType<typeof ConversationList> | null>(null)
 
 // 对话式规划
 function handleSubmitChat(req: TripRequest) {
   initialRequest.value = req
+  resumeThreadId.value = null
+  resumePlan.value = null
   activeThreadId.value = null
   mode.value = 'chat'
 }
@@ -37,17 +41,9 @@ function cancelChat() {
   sidebarRef.value?.load()
 }
 
-// 返回首页
-function goBack() {
-  mode.value = 'form'
-  tripPlan.value = null
-  activeThreadId.value = null
-}
-
-// 重新规划
-function handleReplan() {
-  mode.value = 'form'
-  tripPlan.value = null
+// 从结果页返回对话继续调整
+function backToChat() {
+  mode.value = 'chat'
 }
 
 // 新建规划（侧边栏按钮）
@@ -55,12 +51,15 @@ function startNew() {
   mode.value = 'form'
   tripPlan.value = null
   initialRequest.value = null
+  resumeThreadId.value = null
+  resumePlan.value = null
   activeThreadId.value = null
 }
 
 // 点击历史对话
 async function openConversation(conv: ConversationItem) {
   activeThreadId.value = conv.thread_id
+  initialRequest.value = null
 
   try {
     // 优先查完整数据（包含存在 DB 里的 trip_plan）
@@ -69,6 +68,8 @@ async function openConversation(conv: ConversationItem) {
     // DB 标记了 done 且有 trip_plan → 直接打开结果页
     if (data.status === 'done' && data.trip_plan) {
       tripPlan.value = data.trip_plan
+      resumeThreadId.value = conv.thread_id
+      resumePlan.value = data.trip_plan
       mode.value = 'result'
       return
     }
@@ -79,6 +80,8 @@ async function openConversation(conv: ConversationItem) {
     if (liveState.trip_plan) {
       // 有行程（正在等用户反馈 / 图结束了）→ 直接展示
       tripPlan.value = liveState.trip_plan
+      resumeThreadId.value = conv.thread_id
+      resumePlan.value = liveState.trip_plan
       mode.value = 'result'
     } else {
       // 真的还在进行中（连行程都没生成完）
@@ -104,23 +107,26 @@ async function openConversation(conv: ConversationItem) {
 
     <main class="main-content">
       <FormView
-        v-if="mode === 'form'"
+        v-show="mode === 'form'"
         :loading="loading"
-        @submit="handleSubmit"
         @submit-chat="handleSubmitChat"
       />
       <ChatView
-        v-else-if="mode === 'chat' && initialRequest"
+        v-if="initialRequest || resumeThreadId"
+        v-show="mode === 'chat'"
+        :key="resumeThreadId ?? 'new'"
         :initial-request="initialRequest"
+        :resume-thread-id="resumeThreadId"
+        :resume-plan="resumePlan"
         @done="onChatDone"
         @back="cancelChat"
         @chat-ended="sidebarRef?.load()"
       />
       <ResultView
-        v-else-if="mode === 'result' && tripPlan"
+        v-if="tripPlan"
+        v-show="mode === 'result'"
         :trip-plan="tripPlan"
-        @back="goBack"
-        @replan="handleReplan"
+        @back="backToChat"
       />
     </main>
   </div>

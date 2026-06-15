@@ -59,9 +59,9 @@ defineExpose({ load })   // 父组件可以调用 load() 刷新列表
           <div class="title">{{ c.destination }}</div>
           <div class="meta">{{ formatDate(c.created_at) }} · {{ c.status === 'done' ? '已完成' : '进行中' }}</div>
         </div>
-        <div class="delete">
-          <button @click="handleDelete(c.thread_id)" >删除</button>
-        </div>
+        <button class="delete" title="删除" @click.stop="handleDelete(c.thread_id)">
+          🗑
+        </button>
       </div>
     </div>
   </div>
@@ -122,7 +122,27 @@ defineExpose({ load })   // 父组件可以调用 load() 刷新列表
 .dot.done   { background: #4ade80; }
 .dot.active { background: #f59e0b; }
 
-.info { overflow: hidden; }
+.info { flex: 1; overflow: hidden; }
 .title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .meta  { font-size: 12px; color: #888; margin-top: 2px; }
+
+.delete {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #888;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.conv-item:hover .delete { opacity: 1; }
+.delete:hover { background: #4a2a2a; color: #f87171; }
 </style>

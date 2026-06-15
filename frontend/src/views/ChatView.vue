@@ -12,7 +12,11 @@ import DailyPlan from '../components/DailyPlan.vue'
 import HotelList from '../components/HotelList.vue'
 import WeatherCard from '../components/WeatherCard.vue'
 
-const props = defineProps<{ initialRequest: TripRequest }>()
+const props = defineProps<{
+  initialRequest?: TripRequest | null
+  resumeThreadId?: string | null
+  resumePlan?: TripPlan | null
+}>()
 const emit = defineEmits<{
   done: [plan: TripPlan]
   back: []
@@ -57,6 +61,16 @@ function handleStreamEvent(ev: StreamEvent) {
 
 
 async function kickoff() {
+  if (props.resumeThreadId) {
+    threadId.value = props.resumeThreadId
+    currentPlan.value = props.resumePlan ?? null
+    isDone.value = true
+    addMessage('system', '已恢复该行程，可继续输入修改意见')
+    return
+  }
+
+  if (!props.initialRequest) return
+
   addMessage('system', `开始规划：${props.initialRequest.destination}`)
   isWaiting.value = true
   try {
@@ -73,7 +87,7 @@ async function kickoff() {
 
 async function sendMessage() {
   const text = userInput.value.trim()
-  if (!text || isWaiting.value || isDone.value || !threadId.value) return
+  if (!text || isWaiting.value || !threadId.value) return
 
   addMessage('user', text)
   userInput.value = ''
@@ -110,7 +124,6 @@ onMounted(kickoff)
 <template>
   <div class="chat-view">
     <header class="top-bar">
-      <button class="btn-back" @click="emit('back')">← 返回</button>
       <div class="title">对话式行程规划 · 实时预览</div>
     </header>
 
@@ -122,7 +135,7 @@ onMounted(kickoff)
             <div class="bubble"><pre>{{ msg.content }}</pre></div>
           </div>
           <div v-if="isWaiting" class="message agent">
-            <div class="bubble typing">Agent 思考中…</div>
+            <div class="bubble typing">Agent 正在生成规划…</div>
           </div>
         </div>
 
@@ -130,13 +143,13 @@ onMounted(kickoff)
           <input
             v-model="userInput"
             type="text"
-            :disabled="isWaiting || isDone"
+            :disabled="isWaiting"
             placeholder="Day 2 换自然风光 / 酒店换豪华 / 满意"
             @keydown.enter="sendMessage"
           />
           <button
             class="btn-send"
-            :disabled="isWaiting || isDone || !userInput.trim()"
+            :disabled="isWaiting || !userInput.trim()"
             @click="sendMessage"
           >
             发送
@@ -146,9 +159,6 @@ onMounted(kickoff)
         <div v-if="currentPlan" class="done-bar">
           <button class="btn-primary" @click="viewFullPlan">
             查看完整行程 →
-          </button>
-          <button class="btn-secondary" @click="emit('back')">
-            重新规划
           </button>
         </div>
       </aside>

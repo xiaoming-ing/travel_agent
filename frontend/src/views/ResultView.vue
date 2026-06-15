@@ -76,7 +76,7 @@ onUnmounted(() => {
   <div class="result-view">
     <!-- 顶部按钮栏 -->
     <header class="top-bar">
-      <button class="btn-ghost" @click="emit('back')">← 返回首页</button>
+      <button class="btn-ghost" @click="emit('back')">← 返回对话调整</button>
       <div class="top-right">
         <button class="btn-ghost" @click="onEditClick">✏️ 编辑行程</button>
         <button class="btn-ghost" @click="onExportClick">📤 导出行程 ▾</button>
