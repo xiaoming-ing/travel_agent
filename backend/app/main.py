@@ -1,6 +1,16 @@
 from dotenv import load_dotenv
 load_dotenv()  # 必须在任何 app.* import 之前，否则 weather.py 等模块顶部 os.getenv 拿不到 .env 里的值
 
+import logging
+import os
+
+# 日志级别由环境变量控制：生产设 INFO/WARNING，开发设 DEBUG
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 
@@ -25,22 +35,29 @@ SSE_HEADERS = {
     "X-Accel-Buffering": "no",   # 禁用可能的反代缓冲
 }
 
+DB_PATH = os.getenv("CHECKPOINTS_DB","checkpoints.db")
+
 # 应用生命周期：启动时打开 SQLite链接 + 编译 conversation graph;结束时闭关
 @asynccontextmanager
 async def lifespan(app:FastAPI):
     await init_table() 
-    async with AsyncSqliteSaver.from_conn_string("checkpoints.db") as checkpointer: # 创建一个LangGraph的持久化存储，让我的对话可恢复
+    async with AsyncSqliteSaver.from_conn_string(DB_PATH) as checkpointer: # 创建一个LangGraph的持久化存储，让我的对话可恢复
         app.state.conv_graph = build_conversation_builder().compile(checkpointer=checkpointer)
-        print("[lifespan] conversation graph 已就绪，checkpoints.db 已连接")
+        logger.info("conversation graph 已就绪，checkpoints.db 已连接")
         yield
-    print("[lifespan] checkpoints.db 已关闭")
+    logger.info("checkpoints.db 已关闭")
 
 app = FastAPI(title="旅行智能助手",lifespan=lifespan)
+
+_origins = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173"
+).split(",")
 
 # 允许前端跨域访问
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[o.strip() for o in _origins if o.strip()],
     allow_methods=["*"],
     allow_headers=["*"]
 )

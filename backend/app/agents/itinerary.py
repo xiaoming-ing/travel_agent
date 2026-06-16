@@ -1,8 +1,7 @@
 """
 Phase2 行程生成器：接收Phase1(ReAct Agent)收集到的原始数据，用structured output 生成最终TripPlan
 """
-import langchain
-langchain.debug = True
+import logging
 from dotenv import load_dotenv
 from langchain_deepseek import ChatDeepSeek
 from app.schemas import Attraction,Hotel,TripPlan,TripRequest
@@ -13,6 +12,8 @@ from app.agents.attraction import search_attraction_by_name, parse_to_attraction
 
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 llm = ChatDeepSeek(model="deepseek-chat",temperature=0.5)
 
@@ -98,7 +99,7 @@ def _resolve_coords(
     )
     if matches:
         hit = name_to_raw[matches[0]]
-        print(f"[resolve_coords] 模糊匹配：'{attr.name}' → '{hit.name}'")
+        logger.debug("[resolve_coords] 模糊匹配：'%s' → '%s'", attr.name, hit.name)
         attr.longitude = hit.longitude
         attr.latitude = hit.latitude
         attr.address = hit.address
@@ -111,7 +112,7 @@ def _resolve_coords(
     if poi:
         new_attr = parse_to_attraction(poi)
         if new_attr:
-            print(f"[resolve_coords] POI 补全：'{attr.name}' → ({new_attr.longitude}, {new_attr.latitude})")
+            logger.debug("[resolve_coords] POI 补全：'%s' → (%s, %s)", attr.name, new_attr.longitude, new_attr.latitude)
             attr.longitude = new_attr.longitude
             attr.latitude = new_attr.latitude
             attr.address = new_attr.address
@@ -120,7 +121,7 @@ def _resolve_coords(
             return
     
     # 4. 彻底查不到，记录警告
-    print(f"[resolve_coords] ⚠️ 无法解析坐标：'{attr.name}'，前端会把它从地图过滤掉")
+    logger.warning("[resolve_coords] 无法解析坐标：'%s'，前端会把它从地图过滤掉", attr.name)
 
 async def generate_plan(
     request:TripRequest,
@@ -147,7 +148,7 @@ async def generate_plan(
 
     try:
         planner = llm.with_structured_output(TripPlan,include_raw=True) # include_raw=True把模型的原始输出一并返回
-        print("[Phase2] 生成行程中...")
+        logger.info("[Phase2] 生成行程中...")
         res = await planner.ainvoke([SystemMessage(content=prompt)])
         result: TripPlan | None = res.get('parsed')
 
@@ -157,10 +158,10 @@ async def generate_plan(
             raise ValueError(reason)
 
     except Exception as e:
-        print(f"[Phase2] LLM 调用失败：{e}")
+        logger.exception("[Phase2] LLM 调用失败")
         return _fallback_plan(request, reason=f"AI 行程生成失败：{e}")
 
-    print('result:',res)
+    logger.debug("Phase2 原始输出: %s", res)
     ## 后处理 1：景点坐标——4 级兜底，应对 LLM 名字漂移
     for a in result.attractions:
         _resolve_coords(a, attractions, request.destination)

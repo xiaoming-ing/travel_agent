@@ -6,6 +6,7 @@ Phase 1:React Ageent 根据用户需求自主调用工具（search_attractions/g
 Phase 2:用Phase 1所收集到的原始数据，调structured output LLM 生成最终TripPlan.
 """
 
+import logging
 from dotenv import load_dotenv
 from langchain_deepseek import ChatDeepSeek
 from langchain.agents import create_agent
@@ -15,6 +16,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from app.agents.itinerary import generate_plan, _fallback_plan
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 # phase 1用的LLM-temperature低，让工具调用决策更稳定
 agent_llm = ChatDeepSeek(model="deepseek-chat",temperature=0.2)
@@ -62,7 +65,7 @@ async def run_workflow(request:TripRequest) -> dict:
     )
 
     # Phase 1:数据收集
-    print("[Phase 1] Agent 开始工作。。。")
+    logger.info("[Phase 1] Agent 开始收集数据...")
     try:
         await agent.ainvoke(
             {
@@ -71,7 +74,7 @@ async def run_workflow(request:TripRequest) -> dict:
             config={"recursion_limit":15}
         )
     except Exception as e:
-        print(f"[Phase 1]失败：{e}")
+        logger.exception("[Phase 1] 数据收集失败")
         return {"trip_plan":_fallback_plan(request,reason=f"数据收集阶段失败：{e}")}
     
     # Phase 2: 结构化LLM生成行程
@@ -88,5 +91,5 @@ async def run_workflow(request:TripRequest) -> dict:
         )
         return {"trip_plan":plan}
     except Exception as e:
-        print(f"[Phase 2] 失败：{e}")
+        logger.exception("[Phase 2] 行程生成失败")
         return {"trip_plan": _fallback_plan(request, reason=f"AI 行程生成失败：{e}")}

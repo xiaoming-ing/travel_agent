@@ -2,6 +2,7 @@
 工具 = 确定性的修改操作（无LLM调用）
 Agent = 解析用户反馈 -> 决定调用哪个工具 -> 传精确参数
 """
+import logging
 from langchain_core.tools import tool
 from app.agents.hotel import (
     compute_centroid,
@@ -17,6 +18,8 @@ from app.schemas import Attraction,Hotel
 import copy
 from app.agents.attraction import search_attraction_by_name, parse_to_attraction
 import contextvars
+
+logger = logging.getLogger(__name__)
 
 
 # 当前修改操作的上下文，工具读写它（Agent执行过程中的共享内存）
@@ -198,7 +201,7 @@ async def apply_revision(
         candidates=candidates_str
     )
 
-    print(f"[Revise]用户反馈：{feedback}")
+    logger.info("[Revise] 用户反馈：%s", feedback)
 
     try:
         await revise_agent.ainvoke(
@@ -209,7 +212,7 @@ async def apply_revision(
             config={"recursion_limit":5}
         )
     except Exception as e:
-        print(f"[Revise]修改失败：{e}")
+        logger.exception("[Revise] 修改失败")
         # 修改失败就返回原行程，不中断对话
         return current_plan
     

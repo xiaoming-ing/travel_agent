@@ -7,6 +7,7 @@
     feedback -> [想改] -> revise -> feedback(循环)
 """
 
+import logging
 from typing import TypedDict,Optional
 from app.schemas import TripRequest,Attraction,Hotel
 from langgraph.types import interrupt
@@ -15,6 +16,8 @@ from langgraph.graph import StateGraph,START,END
 from app.agents.tools import get_session
 from app.agents.revise_tools import apply_revision
 from datetime import date,datetime
+
+logger = logging.getLogger(__name__)
 
 # 整个图的共享状态
 class ConversationState(TypedDict):
@@ -60,10 +63,10 @@ async def clarify_node(state:ConversationState) -> dict:
     return {"request":new_req}
 
 async def plan_node(state:ConversationState) -> dict:
-    print("===plan_node收到的 state===", state["request"])
+    logger.debug("plan_node 收到的 request: %s", state["request"])
     result = await run_workflow(state["request"])
     session = get_session()
-    print("Phase1收集到的景点数量===", len(session.get("attractions", [])))
+    logger.debug("Phase1 收集到的景点数量: %d", len(session.get("attractions", [])))
     return {
         "trip_plan":result.get("trip_plan"),
         "raw_attractions":session.get("attractions",[]),

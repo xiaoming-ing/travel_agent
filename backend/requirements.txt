@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+aiosqlite
+python-dotenv
+pydantic
+langchain
+langchain-deepseek
+langgraph
+langgraph-checkpoint-sqlite
+requests
