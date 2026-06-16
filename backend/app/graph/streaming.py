@@ -69,7 +69,7 @@ async def stream_graph(
     interrupt_payload = extract_interrupt(state)
     thread_id = config["configurable"]["thread_id"]
 
-    if interrupt_payload:
+    if interrupt_payload: # state.tasks里面有挂起的interrupt
         yield format_sse({
             "type": "need_input",
             "thread_id": thread_id,
@@ -77,7 +77,7 @@ async def stream_graph(
             "question": interrupt_payload.get("question"),
             "trip_plan": interrupt_payload.get("trip_plan"),
         })
-    else:
+    else: # 图跑完
         trip_plan = state.values.get("trip_plan")
         if on_done and trip_plan:
             await on_done(trip_plan)
