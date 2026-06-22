@@ -24,11 +24,11 @@ import uuid
 from langgraph.types import Command
 from fastapi.responses import StreamingResponse
 from app.graph.streaming import stream_graph, extract_interrupt
-from app.graph.conversation_store import (
+from app.db.conversation_store import (
     init_table, create_conversation, complete_conversation,
     list_conversations, get_conversation,delete_conversation
 )
-from app.graph.preferences_store import (
+from app.db.preferences_store import (
     init_pref_table, get_preferences, save_preferences_from_request
 )
 

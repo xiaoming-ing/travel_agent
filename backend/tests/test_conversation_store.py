@@ -1,5 +1,5 @@
 import pytest
-from app.graph import conversation_store as cs
+from app.db import conversation_store as cs
 
 
 @pytest.fixture

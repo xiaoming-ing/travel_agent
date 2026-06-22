@@ -1,6 +1,6 @@
 import asyncio
 from fastapi.testclient import TestClient
-from app.graph import preferences_store as ps
+from app.db import preferences_store as ps
 
 
 def test_get_preferences_hit_and_miss(tmp_path, monkeypatch):
