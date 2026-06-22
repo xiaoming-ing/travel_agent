@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { TripRequest } from '../types'
+import { getPreferences } from '../api'
+import { getUserId } from '../userId'
 
 // ===== 父子通信 =====
 // props: 父组件告诉我们是否正在提交（按钮 disable）
@@ -67,6 +69,16 @@ function buildRequest(): TripRequest {
     extra_requirements: extraRequirements.value.trim() || null,
   }
 }
+
+onMounted(async () => {
+  const saved = await getPreferences(getUserId())
+  if (!saved) return
+  if (saved.transport) transport.value = saved.transport
+  if (saved.accommodation) accommodation.value = saved.accommodation
+  if (saved.preferences && saved.preferences.length) {
+    preferences.value = saved.preferences
+  }
+})
 </script>
 
 <template>
