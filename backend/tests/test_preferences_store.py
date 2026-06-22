@@ -1,5 +1,5 @@
 import pytest
-from app.graph import perferences_store as ps
+from app.graph import preferences_store as ps
 from datetime import date
 import aiosqlite
 
