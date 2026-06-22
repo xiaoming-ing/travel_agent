@@ -2,6 +2,7 @@
  * 前后端通信。老版本的 SSE 流式接口去掉了 —— 表单式只需要一次性请求。
  */
 import type { TripRequest, TripPlan, ConversationItem } from './types'
+import { getUserId } from './userId'
 
 // SSE 事件的统一形态
 export interface StreamEvent {
@@ -11,6 +12,12 @@ export interface StreamEvent {
   interrupt_type?: string
   question?: string
   trip_plan?: TripPlan | null
+}
+
+export interface SavedPreferences {
+  preferences: string[]
+  accommodation: string
+  transport: string
 }
 
 // 通用：POST + 读 SSE 流
@@ -52,7 +59,7 @@ async function* streamPost(url: string, body: any): AsyncGenerator<StreamEvent> 
 }
 
 export async function* startChatStream(req: TripRequest): AsyncGenerator<StreamEvent> {
-  yield* streamPost('/api/chat/start-stream', { request: req })
+  yield* streamPost('/api/chat/start-stream', { request: req, user_id: getUserId() })
 }
 
 export async function* resumeChatStream(threadId: string, answer: string): AsyncGenerator<StreamEvent> {
@@ -91,4 +98,12 @@ export async function deleteConversation(threadId: string): Promise<{ok:boolean,
     throw new Error(err.detail || '删除失败')
   }
   return res.json()
+}
+
+export async function getPreferences(userId: string): Promise<SavedPreferences | null> {
+  const resp = await fetch(`/api/preferences/${userId}`)
+  if (!resp.ok) return null
+  const data = await resp.json().catch(() => null)
+  if (!data || Object.keys(data).length === 0) return null
+  return data as SavedPreferences
 }
