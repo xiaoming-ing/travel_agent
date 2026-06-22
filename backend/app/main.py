@@ -31,7 +31,7 @@ from app.db.conversation_store import (
 from app.db.preferences_store import (
     init_pref_table, get_preferences, save_preferences_from_request
 )
-from app.api import chat, conversations
+from app.api import chat, conversations, preferences
 
 DB_PATH = os.getenv("CHECKPOINTS_DB","checkpoints.db")
 
@@ -63,12 +63,7 @@ app.add_middleware(
 
 app.include_router(chat.router)
 app.include_router(conversations.router)
-
-@app.get("/api/preferences/{user_id}")
-async def get_user_preferences(user_id: str):
-    """前端表单挂载时拉取:命中返回 3 字段,未命中返回 {} 让前端回退默认值。"""
-    prefs = await get_preferences(user_id)
-    return prefs or {}
+app.include_router(preferences.router)
 
 @app.get("/api/health")
 async def heath():
