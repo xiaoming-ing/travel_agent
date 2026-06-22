@@ -19,20 +19,26 @@ async def init_table() -> None: # None 没有返回值
                 create_at TEXT,
                 status TEXT DEFAULT 'active',
                 trip_plan TEXT
+                user_id TEXT DEFAULT ''
             )
             """)
+        # 幂等迁移：老库已有 conversations 表但缺 user_id 列时补上
+        try:
+            await db.execute("ALTER TABLE conversations ADD COLUMN user_id TEXT DEFAULT ''")
+        except Exception:
+            pass  # 列已存在
         await db.commit()
 
 
 async def create_conversation(
-    thread_id: str,destination: str, start_date: str,end_date:str
+    thread_id: str,destination: str, start_date: str,end_date:str,user_id: str = ""
 ) -> None:
     title = f"{destination}{start_date} ~ {end_date}"
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             "INSERT OR IGNORE INTO conversations"
-            "(thread_id,title,destination,create_at) VALUES (?,?,?,?)",
-            (thread_id,title,destination,datetime.now().isoformat())
+            "(thread_id,title,destination,create_at,user_id) VALUES (?,?,?,?,?)",
+            (thread_id, title, destination, datetime.now().isoformat(), user_id)
         )
         await db.commit()
 
