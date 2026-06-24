@@ -8,3 +8,5 @@ langchain-deepseek
 langgraph
 langgraph-checkpoint-sqlite
 requests
+bcrypt
+pyjwt

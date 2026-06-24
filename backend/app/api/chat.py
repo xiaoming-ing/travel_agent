@@ -2,7 +2,7 @@
 import logging
 import uuid
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from langgraph.types import Command
 from pydantic import BaseModel
@@ -13,6 +13,7 @@ from app.db.conversation_store import (
     create_conversation, complete_conversation, get_conversation,
 )
 from app.db.preferences_store import save_preferences_from_request
+from app.api.deps import get_current_user_id, get_owned_conversation
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +28,6 @@ SSE_HEADERS = {
 
 class ChatStartBody(BaseModel):
     request: TripRequest
-    user_id: str = ""
-
 
 class ChatResumeBody(BaseModel):
     thread_id: str
@@ -52,7 +51,11 @@ async def _persist_preferences(graph, config, thread_id: str) -> None:
 
 
 @router.post("/api/chat/start-stream")
-async def chat_start_stream(body: ChatStartBody, request: Request):
+async def chat_start_stream(
+    body: ChatStartBody, 
+    request: Request,
+    user_id: str = Depends(get_current_user_id)
+    ):
     """流式版开会话。客户端按SSE协议读事件。"""
     thread_id = str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}
@@ -63,7 +66,7 @@ async def chat_start_stream(body: ChatStartBody, request: Request):
         body.request.destination,
         str(body.request.start_date),
         str(body.request.end_date),
-        body.user_id,
+        user_id,
     )
 
     async def on_done(trip_plan: dict):
@@ -78,8 +81,13 @@ async def chat_start_stream(body: ChatStartBody, request: Request):
 
 
 @router.post("/api/chat/resume-stream")
-async def chat_resume_stream(body: ChatResumeBody, request: Request):
+async def chat_resume_stream(
+    body: ChatResumeBody, 
+    request: Request,
+    user_id: str = Depends(get_current_user_id),
+    ):
     """流式版续跑。"""
+    await get_owned_conversation(body.thread_id, user_id)
     config = {"configurable": {"thread_id": body.thread_id}}
     graph = request.app.state.conv_graph
 

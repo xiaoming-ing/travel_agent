@@ -18,7 +18,7 @@ async def init_table() -> None: # None 没有返回值
                 destination TEXT,
                 create_at TEXT,
                 status TEXT DEFAULT 'active',
-                trip_plan TEXT
+                trip_plan TEXT,
                 user_id TEXT DEFAULT ''
             )
             """)
@@ -50,14 +50,14 @@ async def complete_conversation(thread_id:str,trip_plan:dict) -> None:
         )
         await db.commit()
 
-async def list_conversations(limit:int = 30) -> list[dict]:
+async def list_conversations(user_id: str, limit:int = 30) -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row # 可以像dict一样访问
         async with db.execute(
             "SELECT thread_id, title, destination, create_at AS created_at, status "
-            "FROM conversations WHERE status!='deleted' "
+            "FROM conversations WHERE status!='deleted' AND user_id=? "
             "ORDER BY create_at DESC LIMIT ?",
-            (limit,),
+            (user_id, limit,),
         ) as cur:
             rows = await cur.fetchall() # 一次性取出所有结果
     return [dict(r) for r in rows]
