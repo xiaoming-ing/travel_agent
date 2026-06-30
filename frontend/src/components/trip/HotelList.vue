@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Hotel } from '../types'
+import type { Hotel } from '../../types'
 
 defineProps<{ hotels: Hotel[] }>()
 

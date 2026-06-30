@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import type { TripPlan } from '../types'
-import ResultSidebar from '../components/ResultSidebar.vue'
-import OverviewCard from '../components/OverviewCard.vue'
-import BudgetCard from '../components/BudgetCard.vue'
-import AttractionMap from '../components/AttractionMap.vue'
-import DailyPlan from '../components/DailyPlan.vue'
-import HotelList from '../components/HotelList.vue'
-import WeatherCard from '../components/WeatherCard.vue'
+import ResultSidebar from '../components/trip/ResultSidebar.vue'
+import OverviewCard from '../components/trip/OverviewCard.vue'
+import BudgetCard from '../components/trip/BudgetCard.vue'
+import AttractionMap from '../components/trip/AttractionMap.vue'
+import DailyPlan from '../components/trip/DailyPlan.vue'
+import HotelList from '../components/trip/HotelList.vue'
+import WeatherCard from '../components/trip/WeatherCard.vue'
 
 const props = defineProps<{ tripPlan: TripPlan }>()
 const emit = defineEmits<{ back: [] }>()

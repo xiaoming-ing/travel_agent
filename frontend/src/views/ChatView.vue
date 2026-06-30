@@ -5,12 +5,12 @@ import { startChatStream, resumeChatStream, completeConversation } from '../api'
 import type { StreamEvent } from '../api'
 
 
-import OverviewCard from '../components/OverviewCard.vue'
-import BudgetCard from '../components/BudgetCard.vue'
-import AttractionMap from '../components/AttractionMap.vue'
-import DailyPlan from '../components/DailyPlan.vue'
-import HotelList from '../components/HotelList.vue'
-import WeatherCard from '../components/WeatherCard.vue'
+import OverviewCard from '../components/trip/OverviewCard.vue'
+import BudgetCard from '../components/trip/BudgetCard.vue'
+import AttractionMap from '../components/trip/AttractionMap.vue'
+import DailyPlan from '../components/trip/DailyPlan.vue'
+import HotelList from '../components/trip/HotelList.vue'
+import WeatherCard from '../components/trip/WeatherCard.vue'
 
 const props = defineProps<{
   initialRequest?: TripRequest | null

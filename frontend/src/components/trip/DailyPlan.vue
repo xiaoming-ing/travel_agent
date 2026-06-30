@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { DailyPlan, Attraction } from '../types'
+import type { DailyPlan, Attraction } from '../../types'
 
 const props = defineProps<{
   dailyPlans: DailyPlan[]

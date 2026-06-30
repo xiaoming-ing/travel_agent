@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
-import type { Attraction, Hotel } from '../types'
+import type { Attraction, Hotel } from '../../types'
 
 const props = defineProps<{
   attractions: Attraction[]

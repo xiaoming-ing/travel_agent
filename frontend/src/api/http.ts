@@ -22,7 +22,7 @@ export async function authFetch(
     ...((options.headers as Record<string, string>) ?? {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
-  const resp = await fetch(url, { ...defineOptions, headers });
+  const resp = await fetch(url, { ...options, headers });
   if (resp.status === 401) {
     clearAuth();
     location.reload();

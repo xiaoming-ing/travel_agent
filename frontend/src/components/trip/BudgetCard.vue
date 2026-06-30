@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { BudgetBreakdown } from '../types'
+import type { BudgetBreakdown } from '../../types'
 
 const props = defineProps<{ budget: BudgetBreakdown }>()
 
