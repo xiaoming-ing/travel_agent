@@ -69,16 +69,16 @@ defineExpose({ load })   // 父组件可以调用 load() 刷新列表
 
 <style scoped>
 .conv-list {
-  width: 240px;
-  height: 100vh;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
   background: #1e1e2e;
   display: flex;
   flex-direction: column;
-  position: fixed;
-  left: 0; top: 0;
   padding: 12px 8px;
   box-sizing: border-box;
 }
+
 
 .btn-new {
   width: 100%;
