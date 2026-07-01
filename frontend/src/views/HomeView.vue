@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { TripRequest, TripPlan, ConversationItem } from '../types'
 import { fetchConversation, fetchConvState } from '../api'
@@ -13,6 +13,7 @@ type Mode = 'form' | 'chat' | 'result'
 
 const router = useRouter()
 const username = getUsername() ?? ''   // 登录后固定，普通常量即可
+const avatarLetter = computed(() => username ? username.charAt(0).toUpperCase() : '?')
 
 const mode = ref<Mode>('form')
 const loading = ref(false)
@@ -26,6 +27,7 @@ const sidebarRef = ref<InstanceType<typeof ConversationList> | null>(null)
 
 // 对话式规划
 function handleSubmitChat(req: TripRequest) {
+  loading.value = true   // 防抖:切回 form 页时才解除,避免按钮被连续点击触发多次提交
   initialRequest.value = req
   resumeThreadId.value = null
   resumePlan.value = null
@@ -43,6 +45,7 @@ function onChatDone(plan: TripPlan) {
 // 对话中途取消
 function cancelChat() {
   mode.value = 'form'
+  loading.value = false
   sidebarRef.value?.load()
 }
 
@@ -54,6 +57,7 @@ function backToChat() {
 // 新建规划（侧边栏按钮）
 function startNew() {
   mode.value = 'form'
+  loading.value = false
   tripPlan.value = null
   initialRequest.value = null
   resumeThreadId.value = null
@@ -108,8 +112,17 @@ function logout() {
   <div class="app-layout">
     <aside class="sidebar">
       <div class="user-bar">
-        <span class="uname">👤 {{ username }}</span>
-        <button class="logout-btn" @click="logout">退出</button>
+        <div class="user-info">
+          <span class="avatar">{{ avatarLetter }}</span>
+          <span class="uname">{{ username }}</span>
+        </div>
+        <button class="logout-btn" title="退出登录" aria-label="退出登录" @click="logout">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" />
+            <path d="M9 8l-4 4 4 4" />
+            <path d="M5 12h11" />
+          </svg>
+        </button>
       </div>
       <ConversationList
         ref="sidebarRef"
@@ -172,18 +185,51 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid #eee;
+  margin: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f7f7fb;
 }
-.uname { font-size: 13px; color: #555; }
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;   /* 允许 .uname 超长时正常省略 */
+}
+.avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #8b5cf6, #6a7aff);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+.uname {
+  font-size: 13px;
+  color: #333;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .logout-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
   background: none;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-  color: #888;
+  border: none;
+  border-radius: 8px;
+  color: #999;
   cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
-.logout-btn:hover { color: #f56; border-color: #f56; }
+.logout-btn:hover { background: #fee2e2; color: #ef4444; }
 </style>

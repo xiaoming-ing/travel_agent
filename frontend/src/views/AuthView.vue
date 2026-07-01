@@ -15,6 +15,7 @@ const submitting = ref(false)
 const isLogin = computed(() => mode.value === 'login')
 
 async function submit() {
+  if (submitting.value) return   // 防抖:回车/点击都会走这里,避免连续触发重复提交
   error.value = ''
   if (!username.value || !password.value) {
     error.value = '请输入用户名和密码'

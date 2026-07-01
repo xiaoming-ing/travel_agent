@@ -6,6 +6,9 @@ import { getPreferences } from '../api/index'
 // ===== 父子通信 =====
 // props: 父组件告诉我们是否正在提交（按钮 disable）
 // emit: 用户点"生成" → 把表单数据抛给父组件处理
+const props = defineProps<{
+  loading?: boolean
+}>()
 const emit = defineEmits<{
   'submit-chat': [req: TripRequest]
 }>()
@@ -53,7 +56,7 @@ const canSubmit = computed(() =>
 )
 
 function handleSubmitChat() {
-  if (!canSubmit.value) return
+  if (!canSubmit.value || props.loading) return   // 防抖:提交中不响应重复点击
   emit('submit-chat', buildRequest())
 }
 
@@ -158,8 +161,8 @@ onMounted(async () => {
 
       <!-- ========== 生成按钮 ========== -->
       <div class="submit-row">
-        <button class="submit primary" :disabled="!canSubmit" @click="handleSubmitChat">
-          💬 对话式规划
+        <button class="submit primary" :disabled="!canSubmit || props.loading" @click="handleSubmitChat">
+          {{ props.loading ? '正在启动…' : '💬 对话式规划' }}
         </button>
       </div>
     </div>
