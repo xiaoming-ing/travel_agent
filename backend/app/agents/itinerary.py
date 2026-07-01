@@ -9,7 +9,7 @@ from typing import List
 from langchain_core.messages import SystemMessage
 import difflib
 from app.agents.attraction import search_attraction_by_name, parse_to_attraction
-
+from app.core.tokens import count_tokens
 
 load_dotenv()
 
@@ -159,7 +159,7 @@ async def generate_plan(
 
     except Exception as e:
         logger.exception("[Phase2] LLM 调用失败")
-        return _fallback_plan(request, reason=f"AI 行程生成失败：{e}")
+        return _fallback_plan(request, reason=f"AI 行程生成失败：{e}"),0
 
     logger.debug("Phase2 原始输出: %s", res)
     ## 后处理 1：景点坐标——4 级兜底，应对 LLM 名字漂移
@@ -172,7 +172,8 @@ async def generate_plan(
     # 后处理3: 天气缺失时强制覆盖，防LLM幻觉
     if not weather:
         result.weather_summary = "⚠️ 天气数据暂未获取，建议出行前通过天气 App 查询"
-    return result.model_dump(mode="json")
+    tokens = count_tokens([res["raw"]]) if res.get("raw") is not None else 0
+    return result.model_dump(mode="json"), tokens
 
 def _fallback_plan(request: TripRequest, reason: str) -> dict:
     """最小可用降级计划——Phase 1 或 Phase 2 失败时的兜底。"""

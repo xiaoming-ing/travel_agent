@@ -18,6 +18,11 @@ async def init_user_table() -> None:
             )
             """
         )
+        # 幂等迁移：老库没有role列时补上
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'")
+        except Exception:
+            pass
         await db.commit()
 
 async def create_user(username:str,password_hash:str) -> str | None:
@@ -45,3 +50,11 @@ async def get_user_by_name(username:str) -> dict | None:
         ) as cur:
             row = await cur.fetchone()
     return dict(row) if row else None
+
+async def get_user_role(user_id:str) -> str:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT role FROM users WHERE user_id=?", (user_id,)
+        ) as cur:
+            row = await cur.fetchone()
+        return row[0] if row else 'user'

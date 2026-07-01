@@ -33,11 +33,12 @@ async def stream_graph(
     input_data:Any,
     config:dict,
     on_done: Callable[[dict],Awaitable[None]] | None = None,
+    on_tokens: Callable[[int],Awaitable[None]] | None = None,
 ) -> AsyncIterator[str]:
     """跑图、yield SSE 字符串。末尾yield最终need_input 或done事件。"""
     # 开场
     yield format_sse({"type":"progress","message":"🚀 开始处理请求..."})
-
+    turn_tokens = 0 # 这一轮（本次start/resume调用）真实消耗的token总数
     # 跑图并监听事件
     try:
         async for event in graph.astream_events(input_data,config=config,version="v2"):
@@ -60,10 +61,19 @@ async def stream_graph(
             elif kind == 'on_chain_end' and name == 'revise':
                 yield format_sse({"type":"progress","message":"🧠 正在应用修改..."})
 
+            # 捕获plan/revise节点跑完时返回token_used,累加到这一轮的总消耗里面
+            if kind == "on_chain_end" and name in ('plan','revise'):
+                output = event.get('data',{}).get('output') or {}
+                turn_tokens += output.get('token_used',0) or 0
+
     except Exception as e:
         yield format_sse({"type":"error","message":f"执行失败：{e}"})
         return
     
+    # 不管这轮是“暂停等反馈”还是“图跑完了”，只要消耗了token就记账
+    if on_tokens and turn_tokens:
+        await on_tokens(turn_tokens)
+
     # 结束状态检查
     state = await graph.aget_state(config)
     interrupt_payload = extract_interrupt(state)

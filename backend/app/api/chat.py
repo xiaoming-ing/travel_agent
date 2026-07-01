@@ -13,7 +13,8 @@ from app.db.conversation_store import (
     create_conversation, complete_conversation, get_conversation,
 )
 from app.db.preferences_store import save_preferences_from_request
-from app.api.deps import get_current_user_id, get_owned_conversation
+from app.api.deps import get_owned_conversation, require_quota
+from app.db.quota_store import add_usage
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ async def _persist_preferences(graph, config, thread_id: str) -> None:
 async def chat_start_stream(
     body: ChatStartBody, 
     request: Request,
-    user_id: str = Depends(get_current_user_id)
+    user_id: str = Depends(require_quota)
     ):
     """流式版开会话。客户端按SSE协议读事件。"""
     thread_id = str(uuid.uuid4())
@@ -72,9 +73,12 @@ async def chat_start_stream(
     async def on_done(trip_plan: dict):
         await complete_conversation(thread_id, trip_plan)
         await _persist_preferences(graph, config, thread_id)
+    
+    async def on_tokens(tokens:int):
+        await add_usage(user_id,tokens)
 
     return StreamingResponse(
-        stream_graph(graph, {"request": body.request}, config, on_done=on_done),
+        stream_graph(graph, {"request": body.request}, config, on_done=on_done, on_tokens=on_tokens),
         media_type="text/event-stream",
         headers=SSE_HEADERS,
     )
@@ -84,7 +88,7 @@ async def chat_start_stream(
 async def chat_resume_stream(
     body: ChatResumeBody, 
     request: Request,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(require_quota),
     ):
     """流式版续跑。"""
     await get_owned_conversation(body.thread_id, user_id)
@@ -95,8 +99,11 @@ async def chat_resume_stream(
         await complete_conversation(body.thread_id, trip_plan)
         await _persist_preferences(graph, config, body.thread_id)
 
+    async def on_tokens(tokens: int):
+        await add_usage(user_id, tokens)
+
     return StreamingResponse(
-        stream_graph(graph, Command(resume=body.answer), config, on_done=on_done),
+        stream_graph(graph, Command(resume=body.answer), config, on_done=on_done,on_tokens=on_tokens),
         media_type="text/event-stream",
         headers=SSE_HEADERS,
     )

@@ -18,6 +18,7 @@ from app.schemas import Attraction,Hotel
 import copy
 from app.agents.attraction import search_attraction_by_name, parse_to_attraction
 import contextvars
+from app.core.tokens import count_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +205,7 @@ async def apply_revision(
     logger.info("[Revise] 用户反馈：%s", feedback)
 
     try:
-        await revise_agent.ainvoke(
+        revise_result = await revise_agent.ainvoke(
             {"messages":[
                 SystemMessage(content=sys_msg),
                 HumanMessage(content=f"用户反馈:{feedback}")
@@ -214,6 +215,7 @@ async def apply_revision(
     except Exception as e:
         logger.exception("[Revise] 修改失败")
         # 修改失败就返回原行程，不中断对话
-        return current_plan
+        return get_ctx()["plan"],0
     
-    return get_ctx()["plan"]
+    tokens = count_tokens(revise_result.get("messages",[]))
+    return get_ctx()["plan"], tokens

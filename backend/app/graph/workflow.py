@@ -14,6 +14,8 @@ from app.agents.tools import ALL_TOOLS,reset_session, get_session
 from app.schemas import TripRequest
 from langchain_core.messages import HumanMessage, SystemMessage
 from app.agents.itinerary import generate_plan, _fallback_plan
+from app.core.tokens import count_tokens
+
 
 load_dotenv()
 
@@ -67,7 +69,7 @@ async def run_workflow(request:TripRequest) -> dict:
     # Phase 1:数据收集
     logger.info("[Phase 1] Agent 开始收集数据...")
     try:
-        await agent.ainvoke(
+        phase1_result = await agent.ainvoke(
             {
                 "messages":[SystemMessage(content=AGENT_SYSTEM_PROMPT),HumanMessage(content=user_msg)]
             },
@@ -82,14 +84,15 @@ async def run_workflow(request:TripRequest) -> dict:
     if not data["attractions"]:
         return {"trip_plan":_fallback_plan(request, reason="景点数据暂不可用，请稍后重试")}
     
+    phase1_tokens = count_tokens(phase1_result.get("messages",[]))
     try:
-        plan = await generate_plan(
+        plan,phase2_tokens = await generate_plan(
             request=request,
             attractions=data["attractions"],
             hotels=data["hotels"],
             weather=data["weather"],
         )
-        return {"trip_plan":plan}
+        return {"trip_plan":plan,"token_used":phase1_tokens + phase2_tokens}
     except Exception as e:
         logger.exception("[Phase 2] 行程生成失败")
-        return {"trip_plan": _fallback_plan(request, reason=f"AI 行程生成失败：{e}")}
+        return {"trip_plan": _fallback_plan(request, reason=f"AI 行程生成失败：{e}"), "token_used": phase1_tokens}

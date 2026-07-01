@@ -26,6 +26,7 @@ class ConversationState(TypedDict):
     raw_attractions:list[Attraction]
     raw_hotels:list[Hotel]
     last_feedback:Optional[str]
+    token_used: int
 
 async def clarify_node(state:ConversationState) -> dict:
     """若用户表单里 preferences为空，interrupt问一句。有值直接放行。"""
@@ -70,7 +71,8 @@ async def plan_node(state:ConversationState) -> dict:
     return {
         "trip_plan":result.get("trip_plan"),
         "raw_attractions":session.get("attractions",[]),
-        "raw_hotels":session.get("hotels",[])
+        "raw_hotels":session.get("hotels",[]),
+        "token_used": result.get("token_used",0)    
     }
 
 async def feedback_node(state:ConversationState) -> dict:
@@ -96,14 +98,14 @@ def should_revise(state:ConversationState) -> str:
 
 async def revise_node(state:ConversationState) -> dict:
     """根据反馈调用修改工具"""
-    new_plan = await apply_revision(
+    new_plan,tokens = await apply_revision(
         feedback=state["last_feedback"],
         current_plan=state["trip_plan"],
         raw_attractions=state["raw_attractions"],
         raw_hotels=state["raw_hotels"],
         transport=state["request"].transport
     )
-    return {"trip_plan":new_plan}
+    return {"trip_plan":new_plan,"token_used":tokens}
 
 def build_conversation_builder() -> StateGraph:
     """返回未 compile的 builder。compile放在main.py的lifespan里做，因为要注入checkpointer."""
