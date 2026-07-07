@@ -179,7 +179,117 @@ nginx -t && systemctl restart nginx
 
 ---
 
-## 七、把某个用户设为管理员（不限配额）
+## 七、代码修改后的重新发布流程
+
+后续二次修改代码时，不需要重复完整部署流程。按改动范围选择下面对应步骤。
+
+### 1. 只改后端代码
+
+本地上传后端代码：
+
+```bash
+cd /Users/admin/AI/travel-agent
+rsync -avz --exclude-from=backend/deploy-exclude.txt \
+  backend/ admin@<服务器公网IP>:/opt/travel-agent/backend/
+```
+
+服务器重启后端服务：
+
+```bash
+sudo systemctl restart travel-agent
+sudo systemctl status travel-agent
+sudo journalctl -u travel-agent -n 80 --no-pager
+```
+
+验证后端健康状态：
+
+```bash
+curl http://localhost:8000/api/health
+```
+
+> `systemctl daemon-reload` 只在修改了 `/etc/systemd/system/travel-agent.service` 这种 systemd 配置文件后才需要。普通 Python 代码更新后，必须执行 `systemctl restart travel-agent`，否则旧进程仍在跑旧代码。
+
+### 2. 只改前端代码
+
+前端必须先在本地重新构建，不能只上传 `src/`。Nginx 实际服务的是 `frontend/dist/` 里的静态产物。
+
+```bash
+cd /Users/admin/AI/travel-agent/frontend
+npm run build
+```
+
+如果要确认某段新文案或新逻辑确实打进产物，可以先在本地查 `dist`：
+
+```bash
+grep -R "你新增的文案" dist -n
+```
+
+上传新的构建产物：
+
+```bash
+rsync -avz dist/ admin@<服务器公网IP>:/opt/travel-agent/frontend/dist/
+```
+
+服务器重载 Nginx：
+
+```bash
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+确认服务器上的静态产物已经更新：
+
+```bash
+grep -R "你新增的文案" /opt/travel-agent/frontend/dist -n
+```
+
+浏览器仍显示旧页面时，优先用强制刷新或无痕窗口验证：
+
+- macOS Chrome：`Cmd + Shift + R`
+- Windows Chrome：`Ctrl + Shift + R`
+- 或打开无痕窗口访问
+
+### 3. 前后端都改了
+
+按顺序执行：
+
+```bash
+# 本地：上传后端
+cd /Users/admin/AI/travel-agent
+rsync -avz --exclude-from=backend/deploy-exclude.txt \
+  backend/ admin@<服务器公网IP>:/opt/travel-agent/backend/
+
+# 本地：构建并上传前端
+cd /Users/admin/AI/travel-agent/frontend
+npm run build
+rsync -avz dist/ admin@<服务器公网IP>:/opt/travel-agent/frontend/dist/
+```
+
+然后到服务器执行：
+
+```bash
+sudo systemctl restart travel-agent
+sudo nginx -t
+sudo systemctl restart nginx
+
+sudo systemctl status travel-agent
+curl http://localhost:8000/api/health
+```
+
+### 4. 常见更新失败原因
+
+- 后端只执行了 `systemctl daemon-reload`，没有执行 `systemctl restart travel-agent`。
+- 前端只上传了 `frontend/src/`，没有执行 `npm run build` 并上传 `frontend/dist/`。
+- 在项目根目录执行了 `rsync -avz dist/ ...`，但真正的目录是 `frontend/dist/`。
+- Nginx 配置的 `root` 不是你上传的目录。用下面命令确认：
+
+```bash
+sudo nginx -T | grep -n "root"
+```
+
+---
+
+## 八、把某个用户设为管理员（不限配额）
 
 管理员没有专门的 API，直接改数据库：
 
@@ -195,7 +305,7 @@ sqlite3 /opt/travel-agent/backend/checkpoints.db "UPDATE users SET role='admin' 
 
 ---
 
-## 八、上线检查清单
+## 九、上线检查清单
 
 - [ ] 后端 `.env` 填好全部必填 key
 - [ ] `JWT_SECRET` 是新生成的强随机值，不是本地开发那份
@@ -211,7 +321,7 @@ sqlite3 /opt/travel-agent/backend/checkpoints.db "UPDATE users SET role='admin' 
 
 ---
 
-## 九、常见问题排查
+## 十、常见问题排查
 
 **SSH `Permission denied (publickey,password)`，且没弹密码输入框**
 服务器 SSH 配置禁用了密码登录。去服务器（网页 WebShell）执行 `grep -i passwordauthentication /etc/ssh/sshd_config`，如果是 `no`，改成 `yes` 并 `systemctl restart sshd`。
