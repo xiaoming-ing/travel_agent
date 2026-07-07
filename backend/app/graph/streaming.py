@@ -44,7 +44,23 @@ async def stream_graph(
         async for event in graph.astream_events(input_data,config=config,version="v2"):
             kind = event.get("event")
             name = event.get("name","")
+            
+            if kind == "on_custom_event":
+                data = event.get("data") or {}
 
+                if name == "phase2_start":
+                    yield format_sse({
+                        "type":"phase2_start",
+                        "message":data.get("message","AI正在规划行程...")
+                    })
+                elif name == "phase2_end":
+                    yield format_sse({
+                        "type":"phase2_end",
+                        "message":data.get("message",""),
+                        "elapsed_ms":data.get("elapsed_ms"),
+                        "failed":data.get("failed",False)
+                    })
+                continue
             if kind == "on_tool_start" and name in TOOL_MESSAGES:
                 start_msg,_ = TOOL_MESSAGES[name]
                 if start_msg:
@@ -55,9 +71,6 @@ async def stream_graph(
                 if end_msg:
                     yield format_sse({"type":"progress","message":end_msg})
             
-            # Phase 2 合成行程中（识别进入plan/revise节点）
-            elif kind == 'on_chain_start' and name == 'plan':
-                yield format_sse({"type":"progress","message":"🧠 Phase 2：AI 合成行程中..."})
             elif kind == 'on_chain_end' and name == 'revise':
                 yield format_sse({"type":"progress","message":"🧠 正在应用修改..."})
 

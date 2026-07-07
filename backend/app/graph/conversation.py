@@ -16,6 +16,7 @@ from langgraph.graph import StateGraph,START,END
 from app.agents.tools import get_session
 from app.agents.revise_tools import apply_revision
 from datetime import date,datetime
+from langchain_core.runnables import RunnableConfig
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +64,9 @@ async def clarify_node(state:ConversationState) -> dict:
     new_req = req.model_copy(update={"preferences":prefs})
     return {"request":new_req}
 
-async def plan_node(state:ConversationState) -> dict:
+async def plan_node(state:ConversationState,config:RunnableConfig) -> dict:
     logger.debug("plan_node 收到的 request: %s", state["request"])
-    result = await run_workflow(state["request"])
+    result = await run_workflow(state["request"],config=config)
     session = get_session()
     logger.debug("Phase1 收集到的景点数量: %d", len(session.get("attractions", [])))
     return {

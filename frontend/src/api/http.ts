@@ -4,12 +4,14 @@ import { TripPlan } from "../types";
 import { getToken, clearAuth } from "../lib/session";
 
 export interface StreamEvent {
-  type: "progress" | "need_input" | "done" | "error";
+  type: "progress" | "need_input" | "done" | "error" | "phase2_start" | "phase2_end";
   message?: string;
   thread_id?: string;
   interrupt_type?: string;
   question?: string;
   trip_plan?: TripPlan | null;
+  elapsed_ms?: number;
+  failed?: boolean;
 }
 
 // 带token的fetch: 自动加Authorization头；401（登录失败）就澄清登录并刷新回登录页面

@@ -15,6 +15,9 @@ from app.schemas import TripRequest
 from langchain_core.messages import HumanMessage, SystemMessage
 from app.agents.itinerary import generate_plan, _fallback_plan
 from app.core.tokens import count_tokens
+import time
+from langchain_core.runnables import RunnableConfig
+from langchain_core.callbacks import adispatch_custom_event
 
 
 load_dotenv()
@@ -52,7 +55,7 @@ AGENT_SYSTEM_PROMPT= """你是一个旅行数据收集助手。用户会提供�
 
 agent = create_agent(agent_llm,tools=ALL_TOOLS)
 
-async def run_workflow(request:TripRequest) -> dict:
+async def run_workflow(request:TripRequest,config:RunnableConfig | None = None) -> dict:
     """对外入口：输入TripRequest,返回{"trip_plan":dict}"""
     reset_session()
 
@@ -85,6 +88,12 @@ async def run_workflow(request:TripRequest) -> dict:
         return {"trip_plan":_fallback_plan(request, reason="景点数据暂不可用，请稍后重试")}
     
     phase1_tokens = count_tokens(phase1_result.get("messages",[]))
+    phase2_started_at = time.perf_counter()
+    await adispatch_custom_event(
+        "phase2_start",
+        {"message":"AI 正在规划行程..."},
+        config=config,
+    )
     try:
         plan,phase2_tokens = await generate_plan(
             request=request,
@@ -92,7 +101,26 @@ async def run_workflow(request:TripRequest) -> dict:
             hotels=data["hotels"],
             weather=data["weather"],
         )
+        phase2_elapsed_ms = int((time.perf_counter()- phase2_started_at)*1000)
+        await adispatch_custom_event(
+              "phase2_end",
+              {
+                  "message": f"AI 规划完成，用时 {phase2_elapsed_ms / 1000:.1f} 秒",
+                  "elapsed_ms": phase2_elapsed_ms,
+              },
+              config=config,
+          )
         return {"trip_plan":plan,"token_used":phase1_tokens + phase2_tokens}
     except Exception as e:
+        phase2_elapsed_ms = int((time.perf_counter() - phase2_started_at) * 1000)
+        await adispatch_custom_event(
+            "phase2_end",
+            {
+                "message":f"AI 规划失败，用时 {phase2_elapsed_ms / 1000:.1f} 秒",
+                "elapsed_ms":phase2_elapsed_ms,
+                "failed":True
+            },
+            config=config
+        )
         logger.exception("[Phase 2] 行程生成失败")
         return {"trip_plan": _fallback_plan(request, reason=f"AI 行程生成失败：{e}"), "token_used": phase1_tokens}
