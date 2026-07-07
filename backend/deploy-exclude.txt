@@ -1,0 +1,10 @@
+# backend/deploy-exclude.txt
+# 用法: rsync -avz --exclude-from=backend/deploy-exclude.txt backend/ root@<IP>:/opt/travel-agent/backend/
+
+.venv
+__pycache__
+.pytest_cache
+checkpoints.db*
+.env
+tests
+requirements-dev.txt
