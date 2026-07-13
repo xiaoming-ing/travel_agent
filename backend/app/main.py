@@ -20,9 +20,10 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from app.graph.conversation import build_conversation_builder
 from app.db.conversation_store import init_table
 from app.db.preferences_store import init_pref_table
-from app.api import chat, conversations, preferences, auth 
+from app.api import chat, conversations, preferences, auth, knowledge
 from app.db.user_store import init_user_table
 from app.db.quota_store import init_quota_table
+from app.rag.store import init_knowledge_table
 
 DB_PATH = os.getenv("CHECKPOINTS_DB", "checkpoints.db")
 
@@ -34,6 +35,7 @@ async def lifespan(app: FastAPI):
     await init_pref_table()
     await init_user_table()
     await init_quota_table()
+    await init_knowledge_table()
     async with AsyncSqliteSaver.from_conn_string(DB_PATH) as checkpointer:
         app.state.conv_graph = build_conversation_builder().compile(checkpointer=checkpointer)
         logger.info("conversation graph 已就绪，checkpoints.db 已连接")
@@ -60,6 +62,7 @@ app.include_router(chat.router)
 app.include_router(conversations.router)
 app.include_router(preferences.router)
 app.include_router(auth.router)
+app.include_router(knowledge.router)
 
 
 @app.get("/api/health")
