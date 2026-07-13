@@ -10,6 +10,7 @@ from langchain_core.messages import SystemMessage
 import difflib
 from app.agents.attraction import search_attraction_by_name, parse_to_attraction
 from app.core.tokens import count_tokens
+from app.rag.retriever import retrieve_for_attractions
 
 load_dotenv()
 
@@ -36,6 +37,7 @@ ITINERARY_PROMPT = """你是一位资深旅行规划师。请基于以下信息�
 1.suggestion:2-3句整体建议，结合天气说穿衣注意事项：
     **如果【天气情况】显示"暂不可用"，不要编造天气，suggestion里不要给具体温度/降水预测**
 2.attractions: 从候选景点挑5-8个填入，补全description(1-2句亮点)、duration_minutes、ticket_price；
+    **若某候选景点下方带有【参考资料】，description必须基于参考资料提炼，不得编造与资料矛盾的内容；无【参考资料】的景点，按常识简要生成**
     **name 必须和候选列表里的名字完全一致（包括标点、括号、繁简体）——不要简写、不要加注、不要改字**
     longitude/latitude可填0，程序会自动用真实坐标覆盖；
     **若【额外要求】流露出风格倾向（如"想要小众点，别太商业化""想拍出好看的照片"），挑选时优先呼应这种倾向，并在 description 里体现相应卖点（如人少清静/适合拍照打卡）**
@@ -53,10 +55,20 @@ ITINERARY_PROMPT = """你是一位资深旅行规划师。请基于以下信息�
 输出必须是严格的JSON，字段不能遗漏
 """
 
-def _format_attractions(attrs:list[Attraction]) -> str:
+def _format_attractions(attrs:list[Attraction], knowledge:dict[str,list[str]] | None = None) -> str:
     if not attrs:
         return "(无候选)"
-    return "\n".join(f"-{a.name}({a.address})" for a in attrs)
+    knowledge = knowledge or {}
+    lines = []
+    for a in attrs:
+        lines.append(f"-{a.name}({a.address})")
+        # 若该景点检索到了用户上传的资料，作为【参考资料】附在下面
+        hits = knowledge.get(a.name)
+        if hits:
+            # 多段用分号连起来，截断到200字，避免prompt过长
+            material = "；".join(hits)[:200]
+            lines.append(f".   【参考资料】{material}")
+    return "\n".join(lines)
 
 def _format_weather(forecast:List[dict]) -> str:
     if not forecast:
@@ -132,6 +144,13 @@ async def generate_plan(
 ) -> dict:
     """Phase2:用Phasse1收集到的原始数据生成完整TripPlan dict。"""
     hotel_price_range = hotels[0].price_range if hotels else "300-500元"
+    knowledge = await retrieve_for_attractions(
+        user_id=user_id,
+        city=request.destination,
+        names=[a.name for a in attractions]
+    )
+    if knowledge:
+        logger.info("[RAG]%d个景点命中用户资料",len(knowledge))
 
     prompt = ITINERARY_PROMPT.format(
         destination=request.destination,
@@ -144,7 +163,7 @@ async def generate_plan(
         preferences=",".join(request.preferences) or "无特殊偏好",
         extra=request.extra_requirements or "无",
         weather=_format_weather(weather),
-        attractions=_format_attractions(attractions)
+        attractions=_format_attractions(attractions,knowledge)
     )
 
     try:
