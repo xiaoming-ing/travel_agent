@@ -66,7 +66,9 @@ async def clarify_node(state:ConversationState) -> dict:
 
 async def plan_node(state:ConversationState,config:RunnableConfig) -> dict:
     logger.debug("plan_node 收到的 request: %s", state["request"])
-    result = await run_workflow(state["request"],config=config)
+    # 从config取运行时上下文里的user_id(RAG检索要用),取不到给空串
+    user_id = config.get("configurable",{}).get("user_id","")
+    result = await run_workflow(state["request"],config=config,user_id=user_id)
     session = get_session()
     logger.debug("Phase1 收集到的景点数量: %d", len(session.get("attractions", [])))
     return {

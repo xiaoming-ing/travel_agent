@@ -55,8 +55,8 @@ AGENT_SYSTEM_PROMPT= """你是一个旅行数据收集助手。用户会提供�
 
 agent = create_agent(agent_llm,tools=ALL_TOOLS)
 
-async def run_workflow(request:TripRequest,config:RunnableConfig | None = None) -> dict:
-    """对外入口：输入TripRequest,返回{"trip_plan":dict}"""
+async def run_workflow(request:TripRequest,config:RunnableConfig | None = None,user_id: str = "") -> dict:
+    """对外入口：输入TripRequest,返回{"trip_plan":dict}.user_id 供 Phase 2 做 RAG 检索。"""
     reset_session()
 
     user_msg = (
@@ -100,6 +100,7 @@ async def run_workflow(request:TripRequest,config:RunnableConfig | None = None) 
             attractions=data["attractions"],
             hotels=data["hotels"],
             weather=data["weather"],
+            user_id=user_id
         )
         phase2_elapsed_ms = int((time.perf_counter()- phase2_started_at)*1000)
         await adispatch_custom_event(

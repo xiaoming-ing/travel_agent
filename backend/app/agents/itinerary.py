@@ -128,6 +128,7 @@ async def generate_plan(
     attractions:list[Attraction],
     hotels:list[Hotel],
     weather:list[dict],
+    user_id:str = ""
 ) -> dict:
     """Phase2:用Phasse1收集到的原始数据生成完整TripPlan dict。"""
     hotel_price_range = hotels[0].price_range if hotels else "300-500元"

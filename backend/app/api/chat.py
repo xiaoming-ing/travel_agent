@@ -59,7 +59,7 @@ async def chat_start_stream(
     ):
     """流式版开会话。客户端按SSE协议读事件。"""
     thread_id = str(uuid.uuid4())
-    config = {"configurable": {"thread_id": thread_id}}
+    config = {"configurable": {"thread_id": thread_id,"user_id": user_id}}
     graph = request.app.state.conv_graph
 
     await create_conversation(
@@ -92,7 +92,7 @@ async def chat_resume_stream(
     ):
     """流式版续跑。"""
     await get_owned_conversation(body.thread_id, user_id)
-    config = {"configurable": {"thread_id": body.thread_id}}
+    config = {"configurable": {"thread_id": body.thread_id,"user_id":user_id}}
     graph = request.app.state.conv_graph
 
     async def on_done(trip_plan: dict):
