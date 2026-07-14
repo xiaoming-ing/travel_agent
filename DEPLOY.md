@@ -96,6 +96,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=/opt/travel-agent/backend
+Environment=HF_ENDPOINT=https://hf-mirror.com
 ExecStart=/opt/travel-agent/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
 Restart=always
 User=root

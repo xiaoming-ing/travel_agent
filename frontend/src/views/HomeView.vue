@@ -116,6 +116,7 @@ function logout() {
           <span class="avatar">{{ avatarLetter }}</span>
           <span class="uname">{{ username }}</span>
         </div>
+        <router-link to="/knowledge" class="kb-link" title="我的攻略库">📚</router-link>
         <button class="logout-btn" title="退出登录" aria-label="退出登录" @click="logout">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" />
@@ -232,4 +233,7 @@ function logout() {
   transition: background 0.15s, color 0.15s;
 }
 .logout-btn:hover { background: #fee2e2; color: #ef4444; }
+.kb-link { text-decoration: none; font-size: 18px; padding: 4px; border-radius: 6px; }
+.kb-link:hover { background: #eff6ff; }
+
 </style>
