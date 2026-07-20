@@ -13,7 +13,7 @@ from app.agents.hotel import (
 )
 from langchain_deepseek import ChatDeepSeek
 from langchain.agents import create_agent
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from app.schemas import Attraction,Hotel
 import copy
 from app.agents.attraction import search_attraction_by_name, parse_to_attraction
@@ -71,6 +71,11 @@ def replace_day_attractions(day: int, new_attraction_names: list[str]) -> str:
     for name in new_attraction_names:
         if name in all_names:
             resolved_names.append(name)
+            # 候选景点也要确保存在于plan["attractions"]
+            if name not in {a["name"] for a in plan["attractions"]}:
+                attr = next((a for a in get_ctx()["raw_attractions"] if a.name == name),None)
+                if attr:
+                    plan["attractions"].append(attr.model_dump(mode="json"))
             continue
 
         poi = search_attraction_by_name(city, name)
@@ -157,18 +162,32 @@ REVISE_SYSTEM_PROMPT_TEMPLATE = """你是旅行行程修改助手。解析用户
 ====当前行程摘要====
 {plan_summary}
 
-====可用候选景点（replace_day_attractions只能用这些）====
+====已收集到候选景点（优先从这里挑选，但不限于这些）====
 {candidates}
 
 可用工具：
 - replace_day_attractions(day, new_attraction_names): 换某天的景点
-    * 优先从【已收集的候选景点】里挑
-    * 用户明确指定的新景点也可以（例如"八达岭长城"），程序会自动从高德 POI 查询补全
+    *new_attraction_names 必须是【具体景点名】,不能是抽象类别
+    * 优先从上面的候选景点挑
+    * 候选里没有合适的，你可以根据常识给出该城市真实存在的具体景点名，程序自动去高德POI查询补全（查不到才失败）
 - change_hotel_type(new_type): 换酒店档次（"经济型酒店"/"舒适型酒店"/"豪华型酒店"/"民宿"）
+
+【关键】用户常说模糊需求，你要把它翻译成具体景点名再调用工具：
+- "换成室内活动"->想成该城市的室内去处，如博物馆/美术馆/科技馆/商场，
+    给出具体名字（例如南京 ->["南京博物院","德基美术馆"])
+- "太累了" / "太赶" / "轻松点" -> 这是【减负】信号，必须做两件事：
+    1.减少景点数量（参考上面行程摘要里当天现有几个，改后要【更少】，
+    比如原本2个减到1个，原本3个减到2个，绝不能变多)；
+    2.保留/替换成轻松的（离得近、室内、步行少）
+    例：某天原本 ["红山森林动物园", "玄武湖景区"] → 说太累 → ["玄武湖景区"]（只留1个轻松的）
+- "公园太多了"->减少自然景点的数量，不是等量替换
+- "换成户外"-> 换成公园/景区等户外具体景点
+- 用户没说第几天时，结合行程摘要推断最合适的一天
 
 规则：
 - 一次调用一个工具就够了
 - 从用户反馈里提取精确参数（day是数字，不是第二天）
+- 必须真正调用工具来修改，不要只用文字回复说"已修改"
 - 同一景点不能出现在多天里（避免重复）
 - 调完工具直接回复"修改完成",不要再自己描述行程
 """
@@ -218,4 +237,22 @@ async def apply_revision(
         return get_ctx()["plan"],0
     
     tokens = count_tokens(revise_result.get("messages",[]))
-    return get_ctx()["plan"], tokens
+    new_plan = get_ctx()["plan"]
+    messages = revise_result.get("messages",[])
+    # 核实plan到底变没变（dict按值深度比较）
+    changed = new_plan != current_plan
+
+    # 没变。挖出原因，给用户一个交代
+    if changed:
+        note = None
+    else:
+        tool_msgs = [m for m in messages if isinstance(m,ToolMessage)]
+        if tool_msgs:
+            # agent 调了工具但是没成功---把工具原话告诉用户
+            note = f"没能修改成功：{tool_msgs[-1].content}"
+        else:
+            # agent压根没调用工具---说明没听懂，引导用户说具体些
+            note = "我不太确定你想怎么改,能说得更具体点吗?比如「把第 2 天换成南京博物院」。"
+    
+    logger.info("[Revise] changed=%s,note=%s",changed,note)
+    return new_plan, tokens,note

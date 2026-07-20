@@ -32,6 +32,7 @@ class ConversationState(TypedDict):
     raw_hotels:list[Hotel]
     last_feedback:Optional[str]
     token_used: int
+    revise_note: Optional[str]
 
 def summarize_plan_for_feedback(plan:Optional[dict]) -> str:
     if not plan:
@@ -59,13 +60,13 @@ async def build_feedback_question(last_feedback:Optional[str],trip_plan:Optional
     """用模型根据上一轮用户反馈生成自然追问；失败时不阻断对话。"""
     feedback = (last_feedback or "").strip()
     plan_summary = summarize_plan_for_feedback(trip_plan)
-
+    logger.info("[Feedback] LLM 看到的真实行程:\n%s", plan_summary)
     system_prompt = (
         "你是旅行规划产品里的中文对话助手。"
-        "根据用户上一轮反馈和当前行程状态，生成一句自然、具体的确认/追问。"
-        "要求：口语化，不要模板腔；不要说'行程已生成'；不要列举例子；"
-        "不要解释你做了什么工具调用；最多2句，总字数不超过70个中文字符；"
-        "不要要求用户回复固定口令，例如'满意'或'done'。"
+        "根据用户上一轮反馈，生成一句自然的确认，告诉用户可以看右侧预览。"
+        "要求：口语化，不要模板腔；不要说'行程已生成'；"
+        "【严禁提及任何具体景点名或地名】——去了哪由右侧预览展示，你只做概括性确认；"
+        "不要列举例子；"
     )
 
     user_prompt = (
@@ -84,6 +85,7 @@ async def build_feedback_question(last_feedback:Optional[str],trip_plan:Optional
         return fallback_feedback_question(last_feedback)
 
     content = (getattr(response,"content","") or "").strip()
+    logger.info("[Feedback] LLM 生成的追问:%s", content)
     return content or fallback_feedback_question(last_feedback)
 
 async def clarify_node(state:ConversationState) -> dict:
@@ -137,12 +139,20 @@ async def plan_node(state:ConversationState,config:RunnableConfig) -> dict:
 
 async def feedback_node(state:ConversationState) -> dict:
     """展示当前行程，等用户反馈（或'满意'结束）。"""
+    note = state.get("revise_note")
+    if note:
+        # revise没成功：直接如实告知，绝不让LLM粉饰成“改好了”
+        question = f"{note}\n换个说法或说得更具体些，我再试试。"
+    else:
+        # 正常情况
+        question = await build_feedback_question(state.get("last_feedback"),state.get("trip_plan"))
     feedback: str = interrupt({
         "type":"feedback",
-        "question":await build_feedback_question(state.get("last_feedback"),state.get("trip_plan")),
+        "question":question,
         "trip_plan":state["trip_plan"]
     })
-    return {"last_feedback":feedback}
+    # 清除note，避免残留到下一轮
+    return {"last_feedback":feedback, "revise_note":None}
 
 def should_revise(state:ConversationState) -> str:
     """条件边：路由到revise或END。"""
@@ -154,14 +164,14 @@ def should_revise(state:ConversationState) -> str:
 
 async def revise_node(state:ConversationState) -> dict:
     """根据反馈调用修改工具"""
-    new_plan,tokens = await apply_revision(
+    new_plan,tokens,note = await apply_revision(
         feedback=state["last_feedback"],
         current_plan=state["trip_plan"],
         raw_attractions=state["raw_attractions"],
         raw_hotels=state["raw_hotels"],
         transport=state["request"].transport
     )
-    return {"trip_plan":new_plan,"token_used":tokens}
+    return {"trip_plan":new_plan,"token_used":tokens,"revise_note":note}
 
 def build_conversation_builder() -> StateGraph:
     """返回未 compile的 builder。compile放在main.py的lifespan里做，因为要注入checkpointer."""
