@@ -17,8 +17,12 @@ from app.agents.tools import get_session
 from app.agents.revise_tools import apply_revision
 from datetime import date,datetime
 from langchain_core.runnables import RunnableConfig
+from langchain_core.messages import SystemMessage,HumanMessage
+from langchain_deepseek import ChatDeepSeek
 
 logger = logging.getLogger(__name__)
+
+feedback_llm = ChatDeepSeek(model="deepseek-chat",temperature=0.6)
 
 # 整个图的共享状态
 class ConversationState(TypedDict):
@@ -28,6 +32,59 @@ class ConversationState(TypedDict):
     raw_hotels:list[Hotel]
     last_feedback:Optional[str]
     token_used: int
+
+def summarize_plan_for_feedback(plan:Optional[dict]) -> str:
+    if not plan:
+        return "暂无行程"
+
+    lines = [
+        f"目的地：{plan.get('destination','')}",
+        f"天数：{plan.get('trip_days','')}",
+    ]
+    for dp in plan.get("daily_plans",[]):
+        attractions = "、".join(dp.get("attraction_names",[]))
+        lines.append(f"Day {dp.get('day')}：{attractions}")
+    hotels = plan.get("hotels") or []
+    if hotels:
+        lines.append(f"酒店：{'、'.join(h.get('name','') for h in hotels[:3])}")
+    return "\n".join(lines)
+
+def fallback_feedback_question(last_feedback:Optional[str]) -> str:
+    feedback = (last_feedback or "").strip()
+    if feedback:
+        return "我按你的反馈调了一版，你看看现在顺不顺。还有哪里别扭，直接说。"
+    return "我先把行程排好了，你看看右侧预览。哪里不顺直接说，我再改。"
+
+async def build_feedback_question(last_feedback:Optional[str],trip_plan:Optional[dict]) -> str:
+    """用模型根据上一轮用户反馈生成自然追问；失败时不阻断对话。"""
+    feedback = (last_feedback or "").strip()
+    plan_summary = summarize_plan_for_feedback(trip_plan)
+
+    system_prompt = (
+        "你是旅行规划产品里的中文对话助手。"
+        "根据用户上一轮反馈和当前行程状态，生成一句自然、具体的确认/追问。"
+        "要求：口语化，不要模板腔；不要说'行程已生成'；不要列举例子；"
+        "不要解释你做了什么工具调用；最多2句，总字数不超过70个中文字符；"
+        "不要要求用户回复固定口令，例如'满意'或'done'。"
+    )
+
+    user_prompt = (
+        f"用户上一轮反馈：{feedback or '无，这是首次生成行程'}\n\n"
+        f"当前行程摘要：\n{plan_summary}\n\n"
+        "请直接输出要展示给用户的话。"
+    )
+
+    try:
+        response = await feedback_llm.ainvoke([
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt),
+        ])
+    except Exception:
+        logger.exception("[Feedback] 生成反馈提示失败")
+        return fallback_feedback_question(last_feedback)
+
+    content = (getattr(response,"content","") or "").strip()
+    return content or fallback_feedback_question(last_feedback)
 
 async def clarify_node(state:ConversationState) -> dict:
     """若用户表单里 preferences为空，interrupt问一句。有值直接放行。"""
@@ -82,11 +139,7 @@ async def feedback_node(state:ConversationState) -> dict:
     """展示当前行程，等用户反馈（或'满意'结束）。"""
     feedback: str = interrupt({
         "type":"feedback",
-        "question":(
-            "行程已生成。有什么想调整的吗？\n"
-            "例如：'Day 2的博物馆太多了，换成户外'、'酒店换成豪华型'\n"
-            "输入'满意'或'done'结束对话"
-        ),
+        "question":await build_feedback_question(state.get("last_feedback"),state.get("trip_plan")),
         "trip_plan":state["trip_plan"]
     })
     return {"last_feedback":feedback}
