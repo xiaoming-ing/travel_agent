@@ -12,9 +12,9 @@ const emit = defineEmits<{ navigate: [id: string] }>()
 const dailyOpen = ref(true)
 
 const mainItems = [
-  { id: 'overview', icon: '📋', label: '行程概览' },
-  { id: 'budget', icon: '🪙', label: '预算明细' },
-  { id: 'map', icon: '📍', label: '景点地图' },
+  { id: 'overview', label: '行程概览' },
+  { id: 'budget', label: '预算明细' },
+  { id: 'map', label: '景点地图' },
 ] as const
 </script>
 
@@ -28,7 +28,6 @@ const mainItems = [
       :class="{ active: activeId === item.id }"
       @click="emit('navigate', item.id)"
     >
-      <span class="icon">{{ item.icon }}</span>
       <span>{{ item.label }}</span>
     </button>
 
@@ -38,7 +37,6 @@ const mainItems = [
       :class="{ active: activeId === 'daily' || activeId.startsWith('day-') }"
       @click="emit('navigate', 'daily'); dailyOpen = !dailyOpen"
     >
-      <span class="icon">📅</span>
       <span>每日行程</span>
       <span class="arrow" :class="{ open: dailyOpen }">▾</span>
     </button>
@@ -61,7 +59,6 @@ const mainItems = [
       :class="{ active: activeId === 'hotels' }"
       @click="emit('navigate', 'hotels')"
     >
-      <span class="icon">🏨</span>
       <span>住宿选择</span>
     </button>
 
@@ -71,7 +68,6 @@ const mainItems = [
       :class="{ active: activeId === 'weather' }"
       @click="emit('navigate', 'weather')"
     >
-      <span class="icon">🌤️</span>
       <span>天气信息</span>
     </button>
   </nav>
@@ -83,31 +79,32 @@ const mainItems = [
   flex-direction: column;
   gap: 4px;
   background: #fff;
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
   padding: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-soft);
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 10px 12px;
   border: none;
   border-radius: 8px;
   background: transparent;
   cursor: pointer;
   font-size: 14px;
-  color: #555;
+  color: var(--color-note);
   text-align: left;
   transition: background 0.15s;
 }
-.nav-item:hover { background: #f5f5f7; }
+.nav-item:hover { background: var(--color-soft); }
 .nav-item.active {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: #fff;
+  background: #edf5f4;
+  color: var(--color-route);
+  font-weight: 750;
 }
-.nav-item .icon { font-size: 16px; }
 .arrow {
   margin-left: auto;
   transition: transform 0.2s;
@@ -129,9 +126,9 @@ const mainItems = [
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
-  color: #777;
+  color: var(--color-note);
   text-align: left;
 }
-.sub-item:hover { background: #f5f5f7; }
-.sub-item.active { background: #e6ecff; color: #4a5fdc; font-weight: 600; }
+.sub-item:hover { background: var(--color-soft); }
+.sub-item.active { background: #edf5f4; color: var(--color-route); font-weight: 750; }
 </style>

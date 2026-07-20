@@ -47,7 +47,7 @@ function toggleMode() {
 <template>
   <div class="auth-bg">
     <div class="auth-card">
-      <h1>🌍 AI 旅行助手</h1>
+      <h1>旅行规划工作台</h1>
       <p class="subtitle">{{ isLogin ? '登录你的账号' : '注册新账号' }}</p>
 
       <div class="field">
@@ -80,41 +80,49 @@ function toggleMode() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.62), rgba(255,255,255,0) 360px),
+    var(--color-paper);
+  padding: 24px;
 }
 .auth-card {
   width: 360px;
   background: #fff;
-  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
   padding: 36px 32px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-soft);
 }
-.auth-card h1 { font-size: 24px; text-align: center; margin-bottom: 6px; }
-.subtitle { text-align: center; color: #888; margin-bottom: 28px; font-size: 14px; }
+.auth-card h1 { font-size: 24px; text-align: center; margin-bottom: 6px; color: var(--color-ink); }
+.subtitle { text-align: center; color: var(--color-note); margin-bottom: 28px; font-size: 14px; }
 .field { margin-bottom: 18px; }
-.field label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; }
+.field label { display: block; font-size: 13px; color: var(--color-note); margin-bottom: 6px; font-weight: 650; }
 .field input {
   width: 100%;
   padding: 11px 12px;
-  border: 1px solid #e4e7ed;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 14px;
   outline: none;
 }
-.field input:focus { border-color: #6a7aff; }
-.error { color: #f56; font-size: 13px; margin-bottom: 14px; }
+.field input:focus {
+  border-color: var(--color-route);
+  box-shadow: 0 0 0 3px rgba(31, 111, 120, 0.12);
+}
+.error { color: var(--color-signal); font-size: 13px; margin-bottom: 14px; }
 .submit {
   width: 100%;
   padding: 13px;
-  background: linear-gradient(135deg, #8b5cf6, #6a7aff);
+  background: var(--color-signal);
   color: #fff;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 750;
   cursor: pointer;
 }
 .submit:disabled { opacity: 0.6; cursor: not-allowed; }
-.toggle { text-align: center; margin-top: 18px; font-size: 13px; color: #888; }
-.toggle a { color: #6a7aff; cursor: pointer; margin-left: 4px; }
+.submit:not(:disabled):hover { background: var(--color-signal-dark); }
+.toggle { text-align: center; margin-top: 18px; font-size: 13px; color: var(--color-note); }
+.toggle a { color: var(--color-route); cursor: pointer; margin-left: 4px; }
 </style>

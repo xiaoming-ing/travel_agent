@@ -116,7 +116,7 @@ function logout() {
           <span class="avatar">{{ avatarLetter }}</span>
           <span class="uname">{{ username }}</span>
         </div>
-        <router-link to="/knowledge" class="kb-link" title="我的攻略库">📚</router-link>
+        <router-link to="/knowledge" class="kb-link" title="我的攻略库">攻略库</router-link>
         <button class="logout-btn" title="退出登录" aria-label="退出登录" @click="logout">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" />
@@ -164,16 +164,22 @@ function logout() {
 .app-layout {
   display: flex;
   min-height: 100vh;
+  background:
+    linear-gradient(90deg, rgba(31, 111, 120, 0.05) 0, transparent 360px),
+    var(--color-paper);
 }
 
 .sidebar {
   flex-shrink: 0;
-  width: 240px;
+  width: 260px;
   height: 100vh;
   position: sticky;
   top: 0;
   display: flex;
   flex-direction: column;
+  border-right: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
 }
 
 
@@ -186,10 +192,12 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #f7f7fb;
+  gap: 8px;
+  margin: 14px;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
 }
 .user-info {
   display: flex;
@@ -201,19 +209,19 @@ function logout() {
   flex-shrink: 0;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #8b5cf6, #6a7aff);
+  background: var(--color-route);
   color: #fff;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
 }
 .uname {
   font-size: 13px;
-  color: #333;
-  font-weight: 500;
+  color: var(--color-ink);
+  font-weight: 650;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -227,13 +235,21 @@ function logout() {
   height: 30px;
   background: none;
   border: none;
-  border-radius: 8px;
-  color: #999;
+  border-radius: 6px;
+  color: var(--color-muted);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
-.logout-btn:hover { background: #fee2e2; color: #ef4444; }
-.kb-link { text-decoration: none; font-size: 18px; padding: 4px; border-radius: 6px; }
-.kb-link:hover { background: #eff6ff; }
+.logout-btn:hover { background: #f8e7e0; color: var(--color-signal); }
+.kb-link {
+  text-decoration: none;
+  font-size: 12px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  color: var(--color-route);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.kb-link:hover { background: #edf5f4; border-color: rgba(31, 111, 120, 0.18); }
 
 </style>

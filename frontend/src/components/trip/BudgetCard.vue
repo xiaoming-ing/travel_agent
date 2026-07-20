@@ -11,20 +11,20 @@ const total = computed(() => {
 })
 
 const items = computed(() => [
-  { icon: '🎟️', label: '景点门票', value: props.budget.attractions },
-  { icon: '🏨', label: '酒店住宿', value: props.budget.hotel },
-  { icon: '🍽️', label: '餐饮费用', value: props.budget.meals },
-  { icon: '🚇', label: '交通费用', value: props.budget.transport },
+  { code: '票', label: '景点门票', value: props.budget.attractions },
+  { code: '住', label: '酒店住宿', value: props.budget.hotel },
+  { code: '餐', label: '餐饮费用', value: props.budget.meals },
+  { code: '行', label: '交通费用', value: props.budget.transport },
 ])
 </script>
 
 <template>
   <div class="budget-card">
-    <div class="card-header">🪙 预算明细</div>
+    <div class="card-header">预算明细</div>
     <div class="card-body">
       <div class="grid">
         <div v-for="it in items" :key="it.label" class="mini">
-          <div class="mini-label">{{ it.icon }} {{ it.label }}</div>
+          <div class="mini-label"><span>{{ it.code }}</span>{{ it.label }}</div>
           <div class="mini-value">¥{{ it.value }}</div>
         </div>
       </div>
@@ -39,16 +39,17 @@ const items = computed(() => [
 <style scoped>
 .budget-card {
   background: #fff;
-  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-soft);
 }
 .card-header {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: #fff;
-  padding: 14px 20px;
-  font-size: 16px;
-  font-weight: 600;
+  color: var(--color-ink);
+  padding: 16px 20px 12px;
+  font-size: 18px;
+  font-weight: 750;
+  border-bottom: 1px solid var(--color-border);
 }
 .card-body { padding: 20px; }
 
@@ -59,24 +60,45 @@ const items = computed(() => [
   margin-bottom: 16px;
 }
 .mini {
-  background: #f7f7fb;
-  border-radius: 10px;
+  background: #fbfaf6;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   padding: 14px 16px;
-  text-align: center;
 }
-.mini-label { font-size: 13px; color: #777; margin-bottom: 6px; }
-.mini-value { font-size: 18px; font-weight: 700; color: #4a5fdc; }
+.mini-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-note);
+  margin-bottom: 8px;
+}
+.mini-label span {
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  border-radius: 6px;
+  background: #edf5f4;
+  color: var(--color-route);
+  font-weight: 750;
+}
+.mini-value { font-size: 20px; font-weight: 750; color: var(--color-ink); }
 
 .total {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--color-ink);
   color: #fff;
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 14px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 650;
 }
 .total-value { font-size: 22px; }
+
+@media (max-width: 640px) {
+  .grid { grid-template-columns: 1fr; }
+}
 </style>

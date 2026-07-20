@@ -87,13 +87,14 @@ onMounted(async () => {
   <div class="form-bg">
     <div class="form-view">
       <header class="hero">
-        <h1>🌍 AI 旅行助手</h1>
-        <p>基于AI的个性化旅行规划，让每一次出行都完美无忧</p>
+        <p class="eyebrow">Trip planning desk</p>
+        <h1>把目的地整理成可执行行程</h1>
+        <p>输入时间、偏好和约束，系统会按景点、天气、酒店和路线生成一份可继续调整的计划。</p>
       </header>
 
     <!-- ========== 目的地与日期 ========== -->
     <section class="card">
-      <h2>📍 目的地与日期</h2>
+      <h2>目的地与日期</h2>
       <div class="grid">
         <div class="field">
           <label><span class="req">*</span> 目的地城市</label>
@@ -120,19 +121,19 @@ onMounted(async () => {
 
     <!-- ========== 偏好设置 ========== -->
     <section class="card">
-      <h2>⚙️ 偏好设置</h2>
+      <h2>偏好设置</h2>
       <div class="grid">
         <div class="field">
           <label>交通方式</label>
           <select v-model="transport">
-            <option v-for="t in TRANSPORTS" :key="t" :value="t">🚇 {{ t }}</option>
+            <option v-for="t in TRANSPORTS" :key="t" :value="t">{{ t }}</option>
           </select>
         </div>
 
         <div class="field">
           <label>住宿偏好</label>
           <select v-model="accommodation">
-            <option v-for="a in ACCOMMODATIONS" :key="a" :value="a">🏨 {{ a }}</option>
+            <option v-for="a in ACCOMMODATIONS" :key="a" :value="a">{{ a }}</option>
           </select>
         </div>
 
@@ -142,7 +143,7 @@ onMounted(async () => {
             <!-- v-model 绑数组，勾选自动 push/splice -->
             <label v-for="p in PREFERENCE_OPTIONS" :key="p.key" class="checkbox">
               <input type="checkbox" :value="p.key" v-model="preferences" />
-              <span>{{ p.icon }} {{ p.key }}</span>
+              <span>{{ p.key }}</span>
             </label>
           </div>
         </div>
@@ -151,7 +152,7 @@ onMounted(async () => {
 
     <!-- ========== 额外要求 ========== -->
     <section class="card">
-      <h2>💬 额外要求</h2>
+      <h2>额外要求</h2>
       <textarea
         v-model="extraRequirements"
         rows="4"
@@ -162,7 +163,7 @@ onMounted(async () => {
       <!-- ========== 生成按钮 ========== -->
       <div class="submit-row">
         <button class="submit primary" :disabled="!canSubmit || props.loading" @click="handleSubmitChat">
-          {{ props.loading ? '正在启动…' : '💬 对话式规划' }}
+          {{ props.loading ? '正在启动...' : '开始规划' }}
         </button>
       </div>
     </div>
@@ -173,34 +174,57 @@ onMounted(async () => {
 /* scoped 让样式只作用于本组件，不会污染全局 */
 .form-bg {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.56), rgba(255,255,255,0) 340px),
+    var(--color-paper);
 }
 
 .form-view {
-  max-width: 1100px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 40px 24px 80px;
+  padding: 48px 28px 80px;
 }
 
 .hero {
-  text-align: center;
-  color: #fff;
-  margin-bottom: 32px;
+  max-width: 760px;
+  color: var(--color-ink);
+  margin-bottom: 28px;
+  border-left: 4px solid var(--color-signal);
+  padding-left: 20px;
 }
-.hero h1 { font-size: 32px; margin-bottom: 8px; }
-.hero p { opacity: 0.85; }
+.eyebrow {
+  color: var(--color-route);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.hero h1 {
+  font-size: 34px;
+  line-height: 1.18;
+  margin-bottom: 10px;
+  letter-spacing: 0;
+}
+.hero p {
+  color: var(--color-note);
+  line-height: 1.7;
+  font-size: 15px;
+}
 
 .card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px 28px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.86);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-soft);
 }
 .card h2 {
-  font-size: 16px;
-  margin-bottom: 20px;
-  color: #333;
+  font-size: 17px;
+  margin-bottom: 18px;
+  color: var(--color-ink);
+  font-weight: 750;
 }
 
 .grid {
@@ -213,36 +237,41 @@ onMounted(async () => {
 .field label {
   display: block;
   font-size: 12px;
-  color: #666;
+  color: var(--color-note);
   margin-bottom: 8px;
+  font-weight: 600;
 }
-.req { color: #f56; margin-right: 4px; }
+.req { color: var(--color-signal); margin-right: 4px; }
 
 .field select,
 .field input[type="date"],
 .field input[type="text"],
 textarea {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #e4e7ed;
+  padding: 11px 12px;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 14px;
   outline: none;
   background: #fff;
   font-family: inherit;
+  color: var(--color-ink);
 }
 .field select:focus,
 .field input:focus,
-textarea:focus { border-color: #6a7aff; }
+textarea:focus {
+  border-color: var(--color-route);
+  box-shadow: 0 0 0 3px rgba(31, 111, 120, 0.12);
+}
 
-/* 旅行天数徽章：紫蓝渐变 */
 .days-badge {
-  padding: 10px 12px;
+  padding: 11px 12px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #6a7aff, #a78bfa);
-  color: #fff;
+  background: #edf5f4;
+  color: var(--color-route);
   text-align: center;
-  font-weight: 600;
+  font-weight: 750;
+  border: 1px solid rgba(31, 111, 120, 0.16);
 }
 
 .checkboxes {
@@ -256,8 +285,12 @@ textarea:focus { border-color: #6a7aff; }
   gap: 6px;
   font-size: 13px;
   cursor: pointer;
-  color: #555;
+  color: var(--color-note);
   margin-bottom: 0;  /* 覆盖 label 的默认 margin */
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff;
 }
 .checkbox input { cursor: pointer; }
 
@@ -268,18 +301,17 @@ textarea {
 
 .submit {
   width: 100%;
-  padding: 16px;
-  background: linear-gradient(135deg, #8b5cf6, #6a7aff);
+  padding: 14px 16px;
+  background: var(--color-signal);
   color: #fff;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 750;
   cursor: pointer;
-  transition: opacity 0.2s;
 }
 .submit:disabled { opacity: 0.6; cursor: not-allowed; }
-.submit:not(:disabled):hover { opacity: 0.9; }
+.submit:not(:disabled):hover { background: var(--color-signal-dark); }
 .submit-row {
   display: flex;
   gap: 12px;
@@ -287,13 +319,21 @@ textarea {
 .submit-row .submit { flex: 1; }
 .submit.secondary {
   background: #fff;
-  color: #667eea;
-  border: 1px solid #667eea;
+  color: var(--color-route);
+  border: 1px solid var(--color-route);
 }
 
 @media (max-width: 768px) {
+  .form-view { padding: 28px 16px 56px; }
+  .hero h1 { font-size: 28px; }
   .grid { grid-template-columns: 1fr 1fr; }
   .field.wide { grid-column: span 2; }
-  .checkboxes { grid-template-columns: repeat(3, 1fr); }
+  .checkboxes { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .grid { grid-template-columns: 1fr; }
+  .field.wide { grid-column: auto; }
+  .checkboxes { grid-template-columns: 1fr; }
 }
 </style>

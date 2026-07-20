@@ -40,7 +40,7 @@ function drawOverlays() {
     .map((a) => [a.longitude, a.latitude])
   const polyline = new AMap.Polyline({
     path: validPath,
-    strokeColor: '#4a5fdc',
+    strokeColor: '#1f6f78',
     strokeWeight: 4,
     strokeOpacity: 0.7,
     lineJoin: 'round',
@@ -54,7 +54,7 @@ function drawOverlays() {
         position: [h.longitude, h.latitude],
         content: `<div class="amap-hotel-marker">H${idx + 1}</div>`,
         offset: new AMap.Pixel(-14, -14),
-        title: `${h.name}  ⭐${h.rating}  ${h.price_range}`,
+        title: `${h.name}  ${h.rating}  ${h.price_range}`,
       })
     })
 
@@ -98,7 +98,7 @@ onUnmounted(() => {
 
 <template>
   <div class="map-card">
-    <div class="card-header">📍 景点地图</div>
+    <div class="card-header">景点地图</div>
     <div class="map-body">
       <div v-if="errorMsg" class="error">{{ errorMsg }}</div>
       <div v-else ref="mapContainer" class="map-container"></div>
@@ -113,7 +113,7 @@ onUnmounted(() => {
   height: 28px;
   line-height: 28px;
   border-radius: 50%;
-  background: #4a5fdc;
+  background: #1f6f78;
   color: #fff;
   text-align: center;
   font-weight: 700;
@@ -127,7 +127,7 @@ onUnmounted(() => {
   height: 28px;
   line-height: 28px;
   border-radius: 50%;
-  background: #ef4444;            /* 红色，区分景点的蓝 */
+  background: #c44e2d;
   color: #fff;
   text-align: center;
   font-weight: 700;
@@ -141,16 +141,17 @@ onUnmounted(() => {
 <style scoped>
 .map-card {
   background: #fff;
-  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-soft);
 }
 .card-header {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: #fff;
-  padding: 14px 20px;
-  font-size: 16px;
-  font-weight: 600;
+  color: var(--color-ink);
+  padding: 16px 20px 12px;
+  font-size: 18px;
+  font-weight: 750;
+  border-bottom: 1px solid var(--color-border);
 }
 .map-body {
   padding: 16px;
@@ -160,12 +161,13 @@ onUnmounted(() => {
   height: 400px;
   border-radius: 8px;
   overflow: hidden;
+  border: 1px solid var(--color-border);
 }
 .error {
   padding: 40px;
   text-align: center;
-  color: #c33;
-  background: #fff5f5;
+  color: var(--color-signal);
+  background: #f8e7e0;
   border-radius: 8px;
 }
 </style>

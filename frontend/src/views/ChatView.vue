@@ -90,23 +90,23 @@ function handleStreamEvent(ev: StreamEvent) {
     addMessage("system", ev.message || "");
   } else if (ev.type === "phase2_start") {
     startPhase2Timer();
-    addMessage("system", ev.message || "AI 正在规划行程...");
+    addMessage("system", ev.message || "正在整理每日路线...");
   } else if (ev.type === "phase2_end") {
     stopPhase2Timer(ev.elapsed_ms);
     addMessage(
       "system",
-      ev.message || `AI 规划完成，用时 ${phase2ElapsedText.value}`,
+      ev.message || `路线整理完成，用时 ${phase2ElapsedText.value}`,
     );
   } else if (ev.type === "need_input") {
     if (ev.thread_id) threadId.value = ev.thread_id;
     if (ev.trip_plan) currentPlan.value = ev.trip_plan;
-    addMessage("agent", ev.question || "（Agent 没说话）");
+    addMessage("agent", ev.question || "还需要补充一些信息。");
     emit("chat-ended");
   } else if (ev.type === "done") {
     if (ev.thread_id) threadId.value = ev.thread_id;
     if (ev.trip_plan) currentPlan.value = ev.trip_plan;
     isDone.value = true;
-    addMessage("system", "对话结束，可点击下方按钮查看完整行程");
+    addMessage("system", "行程已确认，可查看完整计划");
   } else if (ev.type === "error") {
     addMessage("system", `错误：${ev.message}`);
   }
@@ -123,7 +123,7 @@ async function kickoff() {
 
   if (!props.initialRequest) return;
 
-  addMessage("system", `开始规划：${props.initialRequest.destination}`);
+    addMessage("system", `开始规划：${props.initialRequest.destination}`);
   isWaiting.value = true;
   try {
     for await (const ev of startChatStream(props.initialRequest)) {
@@ -178,7 +178,7 @@ onUnmounted(() => {
 <template>
   <div class="chat-view">
     <header class="top-bar">
-      <div class="title">对话式行程规划 · 实时预览</div>
+      <div class="title">规划日志 · 实时预览</div>
     </header>
 
     <div class="layout">
@@ -196,7 +196,7 @@ onUnmounted(() => {
             </div>
           </div>
           <div v-if="isWaiting" class="message agent">
-            <div class="bubble typing">Agent 正在生成规划…</div>
+            <div class="bubble typing">正在整理规划...</div>
           </div>
         </div>
 
@@ -205,7 +205,7 @@ onUnmounted(() => {
             v-model="userInput"
             type="text"
             :disabled="isWaiting"
-            placeholder="Day 2 换自然风光 / 酒店换豪华 / 满意"
+            placeholder="例如：第2天换自然风光 / 酒店换舒适型 / 满意"
             @keydown.enter="sendMessage"
           />
           <button
@@ -219,7 +219,7 @@ onUnmounted(() => {
 
         <div v-if="currentPlan" class="done-bar">
           <button class="btn-primary" @click="viewFullPlan">
-            查看完整行程 →
+            查看完整行程
           </button>
         </div>
       </aside>
@@ -227,9 +227,9 @@ onUnmounted(() => {
       <!-- 右侧：行程实时预览 -->
       <main class="preview">
         <div v-if="!currentPlan" class="empty">
-          <div class="empty-icon">🗺️</div>
+          <div class="empty-icon">路线</div>
           <div class="empty-text">
-            {{ isPhase2Timing ? "AI 正在规划行程…" : "正在收集旅行数据…" }}
+            {{ isPhase2Timing ? "正在整理每日路线..." : "正在收集旅行数据..." }}
           </div>
 
           <div class="empty-hint">
@@ -279,37 +279,37 @@ onUnmounted(() => {
 .chat-view {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 28px;
 }
 
 .top-bar {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 .btn-back {
   padding: 6px 14px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border);
   background: #fff;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
-  color: #333;
+  color: var(--color-ink);
 }
 .btn-back:hover {
-  background: #f5f5f7;
+  background: var(--color-soft);
 }
 .title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
+  font-size: 20px;
+  font-weight: 750;
+  color: var(--color-ink);
 }
 
 .layout {
   display: grid;
   grid-template-columns: 380px 1fr;
-  gap: 20px;
+  gap: 18px;
   align-items: start;
 }
 
@@ -318,8 +318,9 @@ onUnmounted(() => {
   position: sticky;
   top: 24px;
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
   height: calc(100vh - 120px);
@@ -333,7 +334,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: #fafafa;
+  background: #fbfaf6;
 }
 .message {
   display: flex;
@@ -351,7 +352,7 @@ onUnmounted(() => {
 .bubble {
   max-width: 85%;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 13px;
   line-height: 1.6;
 }
@@ -363,23 +364,23 @@ onUnmounted(() => {
 }
 .message.agent .bubble {
   background: #fff;
-  border: 1px solid #eee;
-  color: #333;
+  border: 1px solid var(--color-border);
+  color: var(--color-ink);
 }
 .message.user .bubble {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--color-route);
   color: #fff;
 }
 .message.system .bubble {
   background: transparent;
   border: none;
-  color: #999;
+  color: var(--color-muted);
   font-size: 12px;
   padding: 4px 8px;
 }
 .bubble.typing {
-  color: #888;
-  font-style: italic;
+  color: var(--color-route);
+  font-style: normal;
 }
 
 .input-area {
@@ -387,33 +388,35 @@ onUnmounted(() => {
   gap: 8px;
   padding: 12px 14px;
   background: #fff;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--color-border);
 }
 .input-area input {
   flex: 1;
   padding: 8px 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 13px;
   outline: none;
 }
 .input-area input:focus {
-  border-color: #667eea;
+  border-color: var(--color-route);
+  box-shadow: 0 0 0 3px rgba(31, 111, 120, 0.12);
 }
 .input-area input:disabled {
-  background: #f5f5f5;
-  color: #999;
+  background: var(--color-soft);
+  color: var(--color-muted);
 }
 .btn-send {
   padding: 8px 16px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--color-signal);
   color: #fff;
-  font-weight: 600;
+  font-weight: 750;
   cursor: pointer;
   font-size: 13px;
 }
+.btn-send:not(:disabled):hover { background: var(--color-signal-dark); }
 .btn-send:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -422,21 +425,21 @@ onUnmounted(() => {
 .done-bar {
   padding: 12px 14px;
   background: #fff;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--color-border);
   text-align: center;
 }
 .btn-primary {
   padding: 10px 24px;
   border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #4ade80, #22c55e);
+  border-radius: 8px;
+  background: var(--color-route);
   color: #fff;
-  font-weight: 600;
+  font-weight: 750;
   cursor: pointer;
   font-size: 14px;
 }
 .btn-primary:hover {
-  opacity: 0.9;
+  background: #195b63;
 }
 
 /* ===== 右侧预览 ===== */
@@ -447,22 +450,32 @@ onUnmounted(() => {
 }
 .empty {
   background: #fff;
-  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
   padding: 80px 40px;
   text-align: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-soft);
 }
 .empty-icon {
-  font-size: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid rgba(31, 111, 120, 0.2);
+  border-radius: 50%;
+  color: var(--color-route);
+  font-size: 13px;
+  font-weight: 750;
   margin-bottom: 16px;
 }
 .empty-text {
-  color: #555;
+  color: var(--color-ink);
   font-size: 15px;
   margin-bottom: 4px;
 }
 .empty-hint {
-  color: #aaa;
+  color: var(--color-muted);
   font-size: 12px;
 }
 

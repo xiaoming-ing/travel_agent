@@ -3,15 +3,11 @@ import type { Hotel } from '../../types'
 
 defineProps<{ hotels: Hotel[] }>()
 
-function stars(rating: number): string {
-  const full = Math.round(rating)
-  return '⭐'.repeat(full) + '☆'.repeat(Math.max(0, 5 - full))
-}
 </script>
 
 <template>
   <div class="hotels-card">
-    <div class="card-header">🏨 住宿选择</div>
+    <div class="card-header">住宿选择</div>
 
     <div v-if="hotels.length === 0" class="empty">
       暂无推荐酒店
@@ -35,7 +31,6 @@ function stars(rating: number): string {
             <div><strong>价格：</strong>{{ h.price_range }}</div>
             <div>
               <strong>评分：</strong>
-              <span class="stars">{{ stars(h.rating) }}</span>
               <span class="rating-num">{{ h.rating }}</span>
             </div>
             <div><strong>距离：</strong>{{ h.distance_note || '—' }}</div>
@@ -49,21 +44,22 @@ function stars(rating: number): string {
 <style scoped>
 .hotels-card {
   background: #fff;
-  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-soft);
 }
 .card-header {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: #fff;
-  padding: 14px 20px;
-  font-size: 16px;
-  font-weight: 600;
+  color: var(--color-ink);
+  padding: 16px 20px 12px;
+  font-size: 18px;
+  font-weight: 750;
+  border-bottom: 1px solid var(--color-border);
 }
 .empty {
   padding: 40px 20px;
   text-align: center;
-  color: #999;
+  color: var(--color-muted);
   font-size: 14px;
 }
 
@@ -77,33 +73,33 @@ function stars(rating: number): string {
   display: flex;
   gap: 16px;
   align-items: stretch;
-  border: 1px solid #eee;
-  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   padding: 14px 16px;
   background: #fff;
   transition: box-shadow 0.15s;
 }
-.hotel-item:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+.hotel-item:hover { background: #fbfaf6; }
 .hotel-item.top {
-  border-color: transparent;
-  background: linear-gradient(135deg, #eef0ff, #f5edff);
+  border-color: rgba(31, 111, 120, 0.28);
+  background: #edf5f4;
 }
 
 .rank {
   flex-shrink: 0;
   width: 56px;
   font-size: 14px;
-  font-weight: 700;
-  color: #4a5fdc;
+  font-weight: 750;
+  color: var(--color-route);
   display: flex;
   align-items: center;
   justify-content: center;
   background: #fff;
   border-radius: 8px;
-  border: 1px solid #e0e4ff;
+  border: 1px solid rgba(31, 111, 120, 0.16);
 }
 .hotel-item.top .rank {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--color-route);
   color: #fff;
   border-color: transparent;
 }
@@ -118,13 +114,13 @@ function stars(rating: number): string {
 }
 .name {
   font-size: 16px;
-  font-weight: 700;
-  color: #222;
+  font-weight: 750;
+  color: var(--color-ink);
 }
 .type {
   font-size: 12px;
-  color: #667eea;
-  background: #eef0ff;
+  color: var(--color-route);
+  background: #edf5f4;
   padding: 2px 8px;
   border-radius: 10px;
 }
@@ -135,11 +131,10 @@ function stars(rating: number): string {
   gap: 4px 20px;
   font-size: 13px;
   line-height: 1.7;
-  color: #555;
+  color: var(--color-note);
 }
-.meta-grid strong { color: #333; font-weight: 600; }
-.stars { letter-spacing: 1px; margin-right: 4px; }
-.rating-num { color: #f59e0b; font-weight: 600; }
+.meta-grid strong { color: var(--color-ink); font-weight: 650; }
+.rating-num { color: var(--color-signal); font-weight: 750; }
 
 @media (max-width: 900px) {
   .meta-grid { grid-template-columns: 1fr; }

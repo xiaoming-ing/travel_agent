@@ -76,10 +76,10 @@ onUnmounted(() => {
   <div class="result-view">
     <!-- 顶部按钮栏 -->
     <header class="top-bar">
-      <button class="btn-ghost" @click="emit('back')">← 返回对话调整</button>
+      <button class="btn-ghost" @click="emit('back')">返回对话调整</button>
       <div class="top-right">
-        <button class="btn-ghost" @click="onEditClick">✏️ 编辑行程</button>
-        <button class="btn-ghost" @click="onExportClick">📤 导出行程 ▾</button>
+        <button class="btn-ghost" @click="onEditClick">编辑行程</button>
+        <button class="btn-ghost" @click="onExportClick">导出行程</button>
       </div>
     </header>
 
@@ -133,32 +133,32 @@ onUnmounted(() => {
 .result-view {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 28px;
 }
 
 .top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 .top-right { display: flex; gap: 8px; }
 
 .btn-ghost {
-  padding: 8px 16px;
-  border: 1px solid #ddd;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
   background: #fff;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
-  color: #333;
+  color: var(--color-ink);
 }
-.btn-ghost:hover { background: #f5f5f7; }
+.btn-ghost:hover { background: var(--color-soft); border-color: #d8d0c2; }
 
 .layout {
   display: grid;
   grid-template-columns: 220px 1fr;
-  gap: 20px;
+  gap: 18px;
   align-items: start;
 }
 
@@ -170,15 +170,22 @@ onUnmounted(() => {
 .content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 .section-slot {
   background: #fff;
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   padding: 24px;
   min-height: 120px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  color: #888;
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+}
+
+@media (max-width: 900px) {
+  .result-view { padding: 18px 14px; }
+  .top-bar { align-items: flex-start; gap: 10px; flex-direction: column; }
+  .layout { grid-template-columns: 1fr; }
+  .sidebar-slot { position: static; }
 }
 </style>

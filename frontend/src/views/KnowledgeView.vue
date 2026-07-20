@@ -33,7 +33,7 @@ async function submit() {
   message.value = ''
   try {
     const res = await uploadKnowledge(city.value.trim(), source.value.trim(), content.value)
-    message.value = `上传成功,切分为 ${res.chunk_count} 段`
+    message.value = `上传成功，切分为 ${res.chunk_count} 段`
     content.value = ''       // 清空正文,城市保留方便连续传
     source.value = ''
     await load()             // 刷新列表
@@ -46,7 +46,7 @@ async function submit() {
 
 // 删除
 async function remove(uploadId: string) {
-  if (!confirm('确定删除这批攻略?')) return
+  if (!confirm('确定删除这批攻略？')) return
   await deleteKnowledge(uploadId)
   await load()
 }
@@ -57,13 +57,13 @@ onMounted(load)
 <template>
   <div class="kb-page">
     <header class="kb-header">
-      <button class="back-btn" @click="router.push('/')">← 返回</button>
+      <button class="back-btn" @click="router.push('/')">返回</button>
       <h2>我的攻略库</h2>
     </header>
 
     <p class="kb-hint">
-      上传你收集的城市景点攻略/游记文本,系统会自动切分并向量化。
-      之后生成该城市行程时,会自动检索这些资料来丰富景点描述。
+      上传你收集的城市景点攻略/游记文本，系统会切分并建立检索索引。
+      之后生成该城市行程时，会优先参考这些资料补充景点说明。
     </p>
 
     <!-- 上传表单 -->
@@ -98,34 +98,45 @@ onMounted(load)
 </template>
 
 <style scoped lang="less">
-.kb-page { max-width: 720px; margin: 0 auto; padding: 24px; }
+.kb-page { max-width: 820px; margin: 0 auto; padding: 32px 24px; }
 .kb-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.back-btn { border: none; background: #f1f5f9; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
-.kb-hint { color: #64748b; font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
+.kb-header h2 { color: var(--color-ink); font-size: 24px; }
+.back-btn { border: 1px solid var(--color-border); background: #fff; padding: 7px 12px; border-radius: 8px; cursor: pointer; color: var(--color-ink); }
+.back-btn:hover { background: var(--color-soft); }
+.kb-hint { color: var(--color-note); font-size: 14px; line-height: 1.7; margin-bottom: 20px; }
 
-.kb-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+.kb-form {
+  display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px;
+  background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-card);
+  padding: 18px; box-shadow: var(--shadow-soft);
+}
 .kb-form input, .kb-form textarea {
-  padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;
+  padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 14px;
   font-family: inherit;
+}
+.kb-form input:focus, .kb-form textarea:focus {
+  outline: none; border-color: var(--color-route); box-shadow: 0 0 0 3px rgba(31, 111, 120, 0.12);
 }
 .kb-actions { display: flex; align-items: center; gap: 12px; }
 .kb-actions button {
-  padding: 8px 20px; border: none; border-radius: 8px; background: #3b82f6; color: #fff;
-  cursor: pointer;
+  padding: 8px 20px; border: none; border-radius: 8px; background: var(--color-signal); color: #fff;
+  cursor: pointer; font-weight: 750;
 }
+.kb-actions button:hover { background: var(--color-signal-dark); }
 .kb-actions button:disabled { opacity: .6; cursor: not-allowed; }
-.kb-msg { color: #059669; font-size: 13px; }
+.kb-msg { color: var(--color-route); font-size: 13px; }
 
-.kb-list h3 { font-size: 15px; margin-bottom: 12px; }
-.kb-empty { color: #94a3b8; }
+.kb-list h3 { font-size: 16px; margin-bottom: 12px; color: var(--color-ink); }
+.kb-empty { color: var(--color-muted); }
 .kb-list ul { list-style: none; padding: 0; }
 .kb-list li {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 12px; border: 1px solid #f1f5f9; border-radius: 8px; margin-bottom: 8px;
+  padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; margin-bottom: 8px;
+  background: #fff;
 }
 .kb-item-info { display: flex; gap: 12px; align-items: center; }
-.kb-city { font-weight: 600; }
-.kb-source { color: #64748b; font-size: 13px; }
-.kb-count { color: #94a3b8; font-size: 12px; }
-.kb-del { border: none; background: #fef2f2; color: #ef4444; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+.kb-city { font-weight: 750; color: var(--color-ink); }
+.kb-source { color: var(--color-note); font-size: 13px; }
+.kb-count { color: var(--color-muted); font-size: 12px; }
+.kb-del { border: none; background: #f8e7e0; color: var(--color-signal); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
 </style>

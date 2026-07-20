@@ -33,7 +33,7 @@ function attractionsOfDay(day: DailyPlan) {
 
 <template>
   <div class="daily-card">
-    <div class="card-header">📅 每日行程</div>
+    <div class="card-header">每日行程</div>
 
     <div class="days">
       <div
@@ -51,12 +51,12 @@ function attractionsOfDay(day: DailyPlan) {
         <div v-show="openMap[d.day]" class="day-body">
           <!-- 信息框 -->
           <div class="info-box">
-            <div><strong>📝 行程描述：</strong>{{ d.description }}</div>
-            <div><strong>🚌 交通方式：</strong>{{ d.transport }}</div>
+            <div><strong>行程描述：</strong>{{ d.description }}</div>
+            <div><strong>交通方式：</strong>{{ d.transport }}</div>
           </div>
 
           <!-- 景点安排 -->
-          <h4 class="subhead">🎯 景点安排</h4>
+          <h4 class="subhead">景点安排</h4>
           <div class="attractions-grid">
             <div
               v-for="item in attractionsOfDay(d)"
@@ -77,15 +77,15 @@ function attractionsOfDay(day: DailyPlan) {
                   </span>
                   {{ item.attraction.name }}
                 </div>
-                <div class="att-meta"><strong>地址：</strong>{{ item.attraction.address }}</div>
-                <div class="att-meta"><strong>游览时长：</strong>{{ item.attraction.duration_minutes }}分钟</div>
-                <div class="att-meta"><strong>描述：</strong>{{ item.attraction.description }}</div>
+                <div class="att-meta"><strong>地址</strong>{{ item.attraction.address }}</div>
+                <div class="att-meta"><strong>停留</strong>{{ item.attraction.duration_minutes }}分钟</div>
+                <div class="att-meta"><strong>说明</strong>{{ item.attraction.description }}</div>
               </div>
             </div>
           </div>
 
           <!-- 餐饮安排 -->
-          <h4 class="subhead">🍽️ 餐饮安排</h4>
+          <h4 class="subhead">餐饮安排</h4>
           <table class="meals-table">
             <tbody>
               <tr><td class="meal-label">早餐</td><td>{{ d.meals.breakfast }}</td></tr>
@@ -102,28 +102,29 @@ function attractionsOfDay(day: DailyPlan) {
 <style scoped>
 .daily-card {
   background: #fff;
-  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-soft);
 }
 .card-header {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: #fff;
-  padding: 14px 20px;
-  font-size: 16px;
-  font-weight: 600;
+  color: var(--color-ink);
+  padding: 16px 20px 12px;
+  font-size: 18px;
+  font-weight: 750;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .days { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 
 .day-box {
-  border: 1px solid #eee;
-  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   overflow: hidden;
 }
 .day-head {
   width: 100%;
-  background: #fafafa;
+  background: #fbfaf6;
   border: none;
   padding: 12px 16px;
   display: flex;
@@ -133,28 +134,29 @@ function attractionsOfDay(day: DailyPlan) {
   font-size: 14px;
   text-align: left;
 }
-.day-head:hover { background: #f0f0f5; }
-.arrow { color: #888; }
-.day-title { font-weight: 600; color: #333; }
-.day-date { margin-left: auto; color: #888; font-size: 13px; }
+.day-head:hover { background: var(--color-soft); }
+.arrow { color: var(--color-route); }
+.day-title { font-weight: 750; color: var(--color-ink); }
+.day-date { margin-left: auto; color: var(--color-muted); font-size: 13px; }
 
 .day-body { padding: 16px; }
 
 .info-box {
-  background: #f7f7fb;
+  background: #fbfaf6;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 14px 16px;
   font-size: 13px;
   line-height: 1.8;
-  color: #555;
+  color: var(--color-note);
   margin-bottom: 20px;
 }
-.info-box strong { color: #333; font-weight: 600; }
+.info-box strong { color: var(--color-ink); font-weight: 650; }
 
 .subhead {
   font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: var(--color-ink);
   margin: 20px 0 12px;
 }
 
@@ -165,8 +167,8 @@ function attractionsOfDay(day: DailyPlan) {
   gap: 16px;
 }
 .attraction-card {
-  border: 1px solid #eee;
-  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   overflow: hidden;
   background: #fff;
 }
@@ -175,7 +177,7 @@ function attractionsOfDay(day: DailyPlan) {
   width: 100%;
   height: 180px;
   overflow: hidden;
-  background: #f0f0f0;
+  background: var(--color-soft);
 }
 .att-image-wrap img {
   width: 100%;
@@ -191,7 +193,7 @@ function attractionsOfDay(day: DailyPlan) {
   height: 30px;
   line-height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--color-route);
   color: #fff;
   text-align: center;
   font-weight: 700;
@@ -202,8 +204,8 @@ function attractionsOfDay(day: DailyPlan) {
   top: 8px;
   right: 8px;
   padding: 4px 10px;
-  border-radius: 12px;
-  background: #f56565;
+  border-radius: 999px;
+  background: var(--color-signal);
   color: #fff;
   font-size: 12px;
   font-weight: 600;
@@ -214,17 +216,23 @@ function attractionsOfDay(day: DailyPlan) {
   height: 22px;
   line-height: 22px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--color-route);
   color: #fff;
   text-align: center;
   font-size: 12px;
   font-weight: 700;
   margin-right: 8px;
 }
-.att-info { padding: 12px 14px; font-size: 13px; line-height: 1.7; color: #555; }
-.att-name { font-size: 15px; font-weight: 700; color: #222; margin-bottom: 8px; }
+.att-info { padding: 12px 14px; font-size: 13px; line-height: 1.7; color: var(--color-note); }
+.att-name { font-size: 15px; font-weight: 750; color: var(--color-ink); margin-bottom: 8px; }
 .att-meta { margin-bottom: 4px; }
-.att-meta strong { color: #666; font-weight: 600; }
+.att-meta strong {
+  display: inline-block;
+  min-width: 36px;
+  color: var(--color-muted);
+  font-weight: 650;
+  margin-right: 8px;
+}
 
 /* 餐饮表格 */
 .meals-table {
@@ -234,15 +242,15 @@ function attractionsOfDay(day: DailyPlan) {
 }
 .meals-table td {
   padding: 10px 14px;
-  border-top: 1px solid #eee;
-  color: #555;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-note);
   line-height: 1.6;
 }
 .meal-label {
   width: 80px;
-  color: #333;
-  font-weight: 600;
-  background: #fafafa;
+  color: var(--color-ink);
+  font-weight: 650;
+  background: #fbfaf6;
 }
 
 @media (max-width: 900px) {
