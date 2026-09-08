@@ -1,6 +1,11 @@
 """把常用类型集中导出，其他模块import一行就够了"""
 
-from app.schemas.request import TripRequest
+from app.schemas.request import (
+    ChatResumeBody,
+    ChatStartBody,
+    KnowledgeUploadBody,
+    TripRequest,
+)
 from app.schemas.response import (
     TripPlan,
     Attraction,
@@ -12,6 +17,9 @@ from app.schemas.response import (
 
 __all__ = [
     "TripRequest",
+    "ChatStartBody",
+    "ChatResumeBody",
+    "KnowledgeUploadBody",
     "TripPlan",
     "Attraction",
     "Hotel",

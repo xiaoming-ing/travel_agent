@@ -234,7 +234,7 @@ async def apply_revision(
     except Exception as e:
         logger.exception("[Revise] 修改失败")
         # 修改失败就返回原行程，不中断对话
-        return get_ctx()["plan"],0
+        return get_ctx()["plan"],0,"修改服务暂时不可用，请稍后重试"
     
     tokens = count_tokens(revise_result.get("messages",[]))
     new_plan = get_ctx()["plan"]

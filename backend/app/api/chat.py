@@ -2,12 +2,11 @@
 import logging
 import uuid
 
-from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from langgraph.types import Command
-from pydantic import BaseModel
 
-from app.schemas import TripRequest
+from app.schemas import ChatResumeBody, ChatStartBody
 from app.graph.streaming import stream_graph
 from app.db.conversation_store import (
     create_conversation, complete_conversation, get_conversation,
@@ -25,14 +24,6 @@ SSE_HEADERS = {
     "Connection": "keep-alive",
     "X-Accel-Buffering": "no",   # 禁用可能的反代缓冲
 }
-
-
-class ChatStartBody(BaseModel):
-    request: TripRequest
-
-class ChatResumeBody(BaseModel):
-    thread_id: str
-    answer: str
 
 
 async def _persist_preferences(graph, config, thread_id: str) -> None:

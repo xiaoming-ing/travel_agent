@@ -6,21 +6,16 @@
 """
 import logging
 import asyncio
-from pydantic import BaseModel
 from fastapi import APIRouter,Depends,HTTPException
 from app.api.deps import get_current_user_id
 from app.rag import store
 from app.rag.chunking import chunk_text
 from app.rag.embedding import embed_texts
+from app.schemas import KnowledgeUploadBody
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-class KnowledgeUploadBody(BaseModel):
-    city: str
-    source: str = ""
-    content: str
 
 @router.post("/api/knowledge")
 async def upload_knowledge(
