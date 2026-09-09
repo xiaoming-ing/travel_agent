@@ -15,6 +15,10 @@ from app.schemas.response import (
     BudgetBreakdown
 )
 
+from app.schemas.intent import (
+    TravelIntent,
+)
+
 __all__ = [
     "TripRequest",
     "ChatStartBody",
@@ -25,5 +29,6 @@ __all__ = [
     "Hotel",
     "MealPlan",
     "DailyPlan",
-    "BudgetBreakdown"
+    "BudgetBreakdown",
+    "TravelIntent"
 ]

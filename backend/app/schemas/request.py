@@ -54,7 +54,7 @@ class TripRequest(BaseModel):
         """计算旅行天数（含头尾）"""
         return (self.end_date - self.start_date).days + 1
 
-    @model_validator(mode="after")
+    @model_validator(mode="after") # 检查整个对象的装饰器，validator的返回值，就是最终保存到模型里的值
     def validate_dates(self):
         if self.end_date < self.start_date:
             raise ValueError("结束日期不能早于开始日期")
@@ -62,7 +62,7 @@ class TripRequest(BaseModel):
             raise ValueError("行程不能超过15天")
         return self
 
-    @field_validator("destination")
+    @field_validator("destination") # 检查某一字段
     @classmethod
     def validate_destination(cls, value: str) -> str:
         destination = value.strip()

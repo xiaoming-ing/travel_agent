@@ -9,7 +9,7 @@
 
 import logging
 from typing import TypedDict,Optional
-from app.schemas import TripRequest,Attraction,Hotel
+from app.schemas import TripRequest,Attraction,Hotel, TravelIntent
 from langgraph.types import interrupt
 from app.graph.workflow import run_workflow
 from langgraph.graph import StateGraph,START,END
@@ -19,6 +19,7 @@ from datetime import date,datetime
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import SystemMessage,HumanMessage
 from langchain_deepseek import ChatDeepSeek
+from app.agents.intent import parse_travel_intent
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +28,18 @@ feedback_llm = ChatDeepSeek(model="deepseek-chat",temperature=0.6)
 # 整个图的共享状态
 class ConversationState(TypedDict):
     request: TripRequest
+    intent: TravelIntent
     trip_plan: Optional[dict]
     raw_attractions:list[Attraction]
     raw_hotels:list[Hotel]
     last_feedback:Optional[str]
     token_used: int
     revise_note: Optional[str]
+
+async def intent_node(state:ConversationState) -> dict:
+    req = state["request"]
+    intent = await parse_travel_intent(req)
+    return {"intent":intent}
 
 def summarize_plan_for_feedback(plan:Optional[dict]) -> str:
     if not plan:
@@ -177,12 +184,14 @@ def build_conversation_builder() -> StateGraph:
     """返回未 compile的 builder。compile放在main.py的lifespan里做，因为要注入checkpointer."""
     builder = StateGraph(ConversationState)
 
+    builder.add_node("intent",intent_node)
     builder.add_node("clarify",clarify_node)
     builder.add_node("plan",plan_node)
     builder.add_node("feedback",feedback_node)
     builder.add_node("revise",revise_node)
 
-    builder.add_edge(START,"clarify")
+    builder.add_edge(START,"intent")
+    builder.add_edge("intent","clarify")
     builder.add_edge("clarify","plan")
     builder.add_edge("plan","feedback")
     builder.add_conditional_edges(
