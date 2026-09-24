@@ -100,7 +100,10 @@ INTENT_SYSTEM_PROMPT = """
 请严格按照 TravelIntent 的结构返回解析结果，不要输出解释、建议、行程或额外文本。
 """
 
-async def parse_travel_intent(request:TripRequest) -> TravelIntent:
+async def parse_travel_intent(
+    request: TripRequest,
+    saved_preferences: dict | None = None,
+) -> TravelIntent:
     if not request.extra_requirements:
         return TravelIntent()
     structured_llm = intent_llm.with_structured_output( # 创建了一个包装后的模型对象
@@ -109,6 +112,11 @@ async def parse_travel_intent(request:TripRequest) -> TravelIntent:
     )
     user_prompt = (
         f"目的地：{request.destination}\n"
+        f"日期：{request.start_date} 至 {request.end_date}\n"
+        f"交通方式：{request.transport}\n"
+        f"住宿方式：{request.accommodation}\n"
+        f"标准旅行偏好：{'、'.join(request.preferences) or '无'}\n"
+        f"已保存的长期偏好：{saved_preferences or '无'}\n"
         f"额外要求：{request.extra_requirements}\n"
         "请解析以上额外要求。"
     )

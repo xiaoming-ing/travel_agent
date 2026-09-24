@@ -1,0 +1,75 @@
+[
+  {
+    "name": "老人和禁止爬山",
+    "text": "带老人，行程轻松一点，不爬山",
+    "expected": {
+      "pace": "relaxed",
+      "traveler_types": ["elderly"],
+      "excluded_activities": ["爬山"]
+    }
+  },
+  {
+    "name": "模糊预算口径",
+    "text": "预算控制在3000元",
+    "expected": {"budget_limit": 3000},
+    "contains": {"ambiguities": ["预算"]}
+  },
+  {
+    "name": "明确全程预算",
+    "text": "这趟旅行全程总预算不超过5000元",
+    "expected": {"budget_limit": 5000},
+    "forbidden_contains": {"ambiguities": ["预算"]}
+  },
+  {
+    "name": "饮食正负偏好",
+    "text": "不吃海鲜，但想体验当地美食",
+    "expected": {
+      "dietary_restrictions": ["海鲜"],
+      "themes": ["美食"]
+    }
+  },
+  {
+    "name": "必去和避开",
+    "text": "一定要去夫子庙，不去总统府",
+    "expected": {
+      "must_visit": ["夫子庙"],
+      "avoid_places": ["总统府"]
+    }
+  },
+  {
+    "name": "室内艺术",
+    "text": "想多安排室内的美术馆和艺术展",
+    "expected": {
+      "activity_environment": "indoor",
+      "themes": ["艺术"]
+    }
+  },
+  {
+    "name": "亲子轻松",
+    "text": "带小孩，别安排得太累",
+    "expected": {
+      "pace": "relaxed",
+      "traveler_types": ["child"]
+    }
+  },
+  {
+    "name": "酒店要求",
+    "text": "酒店要安静，最好含早餐",
+    "contains": {"hotel_requirements": ["安静", "早餐"]}
+  },
+  {
+    "name": "时间要求",
+    "text": "第二天晚上想看夜景，最后一天中午前离开",
+    "contains": {"time_requirements": ["第二天", "中午"]}
+  },
+  {
+    "name": "不补充硬约束",
+    "text": "想随便逛逛，看看有意思的地方",
+    "expected": {
+      "must_visit": [],
+      "avoid_places": [],
+      "dietary_restrictions": [],
+      "budget_limit": null
+    }
+  }
+]

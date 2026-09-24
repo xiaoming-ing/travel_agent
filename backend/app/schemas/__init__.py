@@ -18,6 +18,7 @@ from app.schemas.response import (
 from app.schemas.intent import (
     TravelIntent,
 )
+from app.schemas.feedback import FeedbackIntent
 
 __all__ = [
     "TripRequest",
@@ -30,5 +31,6 @@ __all__ = [
     "MealPlan",
     "DailyPlan",
     "BudgetBreakdown",
-    "TravelIntent"
+    "TravelIntent",
+    "FeedbackIntent",
 ]

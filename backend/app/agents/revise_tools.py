@@ -14,7 +14,7 @@ from app.agents.hotel import (
 from langchain_deepseek import ChatDeepSeek
 from langchain.agents import create_agent
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
-from app.schemas import Attraction,Hotel
+from app.schemas import Attraction,Hotel,TravelIntent
 import copy
 from app.agents.attraction import search_attraction_by_name, parse_to_attraction
 import contextvars
@@ -44,6 +44,152 @@ def get_ctx() -> dict:
         reset_ctx()
         return _ctx_var.get()  
     return val
+
+
+def _validate_day(plan: dict, day: int) -> str | None:
+    if day < 1 or day > len(plan.get("daily_plans", [])):
+        return f"day={day} 超出范围（行程共 {len(plan.get('daily_plans', []))} 天）"
+    return None
+
+
+def _resolve_attraction(name: str) -> Attraction | None:
+    ctx = get_ctx()
+    for attraction in ctx.get("raw_attractions", []):
+        if attraction.name == name:
+            return attraction
+
+    city = ctx.get("plan", {}).get("destination", "")
+    poi = search_attraction_by_name(city, name)
+    attraction = parse_to_attraction(poi) if poi else None
+    if attraction is not None:
+        ctx.setdefault("raw_attractions", []).append(attraction)
+    return attraction
+
+
+@tool
+def add_attraction(day: int, attraction_name: str) -> str:
+    """向指定一天增加一个具体景点，不能造成跨天重复。"""
+    plan = get_ctx()["plan"]
+    error = _validate_day(plan, day)
+    if error:
+        return error
+
+    used_names = {
+        name
+        for daily in plan["daily_plans"]
+        for name in daily.get("attraction_names", [])
+    }
+    if attraction_name in used_names:
+        return f"景点 {attraction_name!r} 已经在行程中"
+
+    attraction = _resolve_attraction(attraction_name)
+    if attraction is None:
+        return f"景点 {attraction_name!r} 未找到"
+
+    plan_names = {item["name"] for item in plan.get("attractions", [])}
+    if attraction.name not in plan_names:
+        plan.setdefault("attractions", []).append(attraction.model_dump(mode="json"))
+    plan["daily_plans"][day - 1].setdefault("attraction_names", []).append(
+        attraction.name
+    )
+    return f"已向 Day {day} 增加景点：{attraction.name}"
+
+
+@tool
+def remove_attraction(day: int, attraction_name: str) -> str:
+    """从指定一天移除一个景点。"""
+    plan = get_ctx()["plan"]
+    error = _validate_day(plan, day)
+    if error:
+        return error
+
+    names = plan["daily_plans"][day - 1].get("attraction_names", [])
+    if attraction_name not in names:
+        return f"Day {day} 中没有景点 {attraction_name!r}"
+    plan["daily_plans"][day - 1]["attraction_names"] = [
+        name for name in names if name != attraction_name
+    ]
+    return f"已从 Day {day} 移除景点：{attraction_name}"
+
+
+@tool
+def change_day_pace(day: int, max_attractions: int) -> str:
+    """通过限制当天景点数量调整节奏，max_attractions 只能是 1 或 2。"""
+    plan = get_ctx()["plan"]
+    error = _validate_day(plan, day)
+    if error:
+        return error
+    if max_attractions not in {1, 2}:
+        return "max_attractions 只能是 1 或 2"
+
+    names = plan["daily_plans"][day - 1].get("attraction_names", [])
+    plan["daily_plans"][day - 1]["attraction_names"] = names[:max_attractions]
+    return f"Day {day} 已调整为最多 {max_attractions} 个景点"
+
+
+@tool
+def change_transport(new_transport: str, day: int | None = None) -> str:
+    """修改全部行程或指定一天的交通方式。"""
+    valid = {"公共交通", "自驾", "打车", "步行"}
+    if new_transport not in valid:
+        return f"new_transport 必须是{valid}之一"
+
+    plan = get_ctx()["plan"]
+    if day is None:
+        for daily in plan.get("daily_plans", []):
+            daily["transport"] = new_transport
+        get_ctx()["transport"] = new_transport
+        return f"全部行程交通方式已改为：{new_transport}"
+
+    error = _validate_day(plan, day)
+    if error:
+        return error
+    plan["daily_plans"][day - 1]["transport"] = new_transport
+    return f"Day {day} 交通方式已改为：{new_transport}"
+
+
+@tool
+def update_meal_constraints(restrictions: list[str]) -> str:
+    """把饮食限制同步到每天的餐饮建议中。"""
+    cleaned = list(dict.fromkeys(item.strip() for item in restrictions if item.strip()))
+    if not cleaned:
+        return "restrictions 不能为空"
+
+    warning = f"请避开{'、'.join(cleaned)}，实际配料及交叉污染需向餐厅确认"
+    for daily in get_ctx()["plan"].get("daily_plans", []):
+        meals = daily.get("meals", {})
+        for meal in ("breakfast", "lunch", "dinner"):
+            current = str(meals.get(meal, "")).strip()
+            if warning not in current:
+                meals[meal] = f"{current}（{warning}）" if current else warning
+
+    intent = get_ctx().get("intent", TravelIntent())
+    data = intent.model_dump()
+    data["dietary_restrictions"] = list(
+        dict.fromkeys([*data["dietary_restrictions"], *cleaned])
+    )
+    get_ctx()["intent"] = TravelIntent.model_validate(data)
+    return f"已更新饮食限制：{'、'.join(cleaned)}"
+
+
+@tool
+def update_budget_limit(new_limit: int) -> str:
+    """更新整个行程的总预算上限，并报告当前预算是否超限。"""
+    if new_limit <= 0:
+        return "new_limit 必须大于 0"
+
+    intent = get_ctx().get("intent", TravelIntent())
+    get_ctx()["intent"] = intent.model_copy(update={"budget_limit": new_limit})
+    budget = get_ctx()["plan"].get("budget", {})
+    total = sum(
+        float(budget.get(key, 0) or 0)
+        for key in ("attractions", "hotel", "meals", "transport")
+    )
+    if total > new_limit:
+        return f"预算上限已更新为 {new_limit} 元，但当前估算 {total:g} 元仍然超限"
+    return f"预算上限已更新为 {new_limit} 元，当前估算未超限"
+
+
 @tool
 def replace_day_attractions(day: int, new_attraction_names: list[str]) -> str:
     """把指定一天的景点整组替换为新名字列表。
@@ -153,7 +299,16 @@ def change_hotel_type(new_type:str) -> str:
     get_ctx()["plan"]["hotels"] = [h.model_dump(mode="json") for h in top3]
     return f"酒店已改为 {new_type}，Top3：{', '.join(h.name for h in top3)}"
 
-REVISE_TOOLS = [replace_day_attractions,change_hotel_type]
+REVISE_TOOLS = [
+    add_attraction,
+    remove_attraction,
+    replace_day_attractions,
+    change_hotel_type,
+    change_day_pace,
+    change_transport,
+    update_meal_constraints,
+    update_budget_limit,
+]
 
 _revise_llm = ChatDeepSeek(model="deepseek-chat",temperature=0.2)
 revise_agent = create_agent(_revise_llm,tools=REVISE_TOOLS)
@@ -165,12 +320,21 @@ REVISE_SYSTEM_PROMPT_TEMPLATE = """你是旅行行程修改助手。解析用户
 ====已收集到候选景点（优先从这里挑选，但不限于这些）====
 {candidates}
 
+====必须继续遵守的结构化旅行意图====
+{intent}
+
 可用工具：
 - replace_day_attractions(day, new_attraction_names): 换某天的景点
     *new_attraction_names 必须是【具体景点名】,不能是抽象类别
     * 优先从上面的候选景点挑
     * 候选里没有合适的，你可以根据常识给出该城市真实存在的具体景点名，程序自动去高德POI查询补全（查不到才失败）
 - change_hotel_type(new_type): 换酒店档次（"经济型酒店"/"舒适型酒店"/"豪华型酒店"/"民宿"）
+- add_attraction(day, attraction_name): 向某天增加一个具体景点
+- remove_attraction(day, attraction_name): 从某天删除一个景点
+- change_day_pace(day, max_attractions): 把某天缩减为最多 1 或 2 个景点
+- change_transport(new_transport, day): 修改全部或某天的交通方式
+- update_meal_constraints(restrictions): 更新忌口和饮食限制
+- update_budget_limit(new_limit): 更新全程总预算上限
 
 【关键】用户常说模糊需求，你要把它翻译成具体景点名再调用工具：
 - "换成室内活动"->想成该城市的室内去处，如博物馆/美术馆/科技馆/商场，
@@ -207,6 +371,7 @@ async def apply_revision(
     raw_attractions:list[Attraction],
     raw_hotels:list[Hotel],
     transport:str,
+    intent: TravelIntent | None = None,
 ) -> dict:
     """运行迷你ReAct agent,把feedback转成对current_plan的修改"""
     reset_ctx()
@@ -214,11 +379,13 @@ async def apply_revision(
     get_ctx()["raw_attractions"] = raw_attractions
     get_ctx()["raw_hotels"] = raw_hotels
     get_ctx()["transport"] = transport
+    get_ctx()["intent"] = intent or TravelIntent()
 
     candidates_str = "\n".join(f"-{a.name}" for a in raw_attractions)
     sys_msg = REVISE_SYSTEM_PROMPT_TEMPLATE.format(
         plan_summary=_summarize_plan(current_plan),
-        candidates=candidates_str
+        candidates=candidates_str,
+        intent=get_ctx()["intent"].model_dump_json(indent=2),
     )
 
     logger.info("[Revise] 用户反馈：%s", feedback)

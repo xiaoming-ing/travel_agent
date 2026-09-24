@@ -1,4 +1,14 @@
-from app.agents.revise_tools import apply_revision
+from app.agents.revise_tools import (
+    apply_revision,
+    change_day_pace,
+    change_transport,
+    get_ctx,
+    remove_attraction,
+    reset_ctx,
+    update_budget_limit,
+    update_meal_constraints,
+)
+from app.schemas import TravelIntent
 import pytest
 from unittest.mock import AsyncMock,patch
 
@@ -35,3 +45,57 @@ async def test_apply_revision():
     assert plan == original_plan
     assert tokens == 0
     assert note == "修改服务暂时不可用，请稍后重试"
+
+
+def make_revision_context() -> dict:
+    reset_ctx()
+    plan = {
+        "destination": "南京",
+        "budget": {"attractions": 100, "hotel": 600, "meals": 300, "transport": 200},
+        "daily_plans": [
+            {
+                "day": 1,
+                "attraction_names": ["夫子庙", "玄武湖", "总统府"],
+                "transport": "公共交通",
+                "meals": {"breakfast": "豆浆", "lunch": "本地菜", "dinner": "小吃"},
+            }
+        ],
+        "attractions": [],
+    }
+    get_ctx().update({
+        "plan": plan,
+        "raw_attractions": [],
+        "raw_hotels": [],
+        "transport": "公共交通",
+        "intent": TravelIntent(),
+    })
+    return plan
+
+
+def test_remove_attraction_and_change_day_pace():
+    plan = make_revision_context()
+
+    remove_attraction.invoke({"day": 1, "attraction_name": "总统府"})
+    change_day_pace.invoke({"day": 1, "max_attractions": 1})
+
+    assert plan["daily_plans"][0]["attraction_names"] == ["夫子庙"]
+
+
+def test_change_transport_updates_all_days():
+    plan = make_revision_context()
+
+    change_transport.invoke({"new_transport": "打车"})
+
+    assert plan["daily_plans"][0]["transport"] == "打车"
+
+
+def test_meal_and_budget_tools_update_constraints():
+    plan = make_revision_context()
+
+    update_meal_constraints.invoke({"restrictions": ["海鲜"]})
+    message = update_budget_limit.invoke({"new_limit": 1000})
+
+    assert "海鲜" in plan["daily_plans"][0]["meals"]["lunch"]
+    assert get_ctx()["intent"].dietary_restrictions == ["海鲜"]
+    assert get_ctx()["intent"].budget_limit == 1000
+    assert "仍然超限" in message
