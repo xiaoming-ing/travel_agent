@@ -17,7 +17,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
-from app.graph.conversation import build_conversation_builder
+from app.conversation.graph import build_conversation_builder
 from app.db.conversation_store import init_table
 from app.db.preferences_store import init_pref_table
 from app.api import chat, conversations, preferences, auth, knowledge

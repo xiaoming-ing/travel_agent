@@ -3,18 +3,21 @@ from types import SimpleNamespace
 
 import pytest
 from langgraph.graph import END
-from app.graph import conversation
-from app.graph.conversation import (
-    build_feedback_question,
-    classify_feedback_by_rule,
-    clarify_node,
+from app.conversation import feedback as feedback_module
+from app.conversation import nodes as conversation
+from app.conversation.clarification import (
     find_visit_conflicts,
     merge_travel_intents,
     parse_visit_decision,
     resolve_budget_answer,
     resolve_visit_conflict,
+)
+from app.conversation.feedback import (
+    build_feedback_question,
+    classify_feedback_by_rule,
     should_revise,
 )
+from app.conversation.nodes import clarify_node
 from app.schemas import TripRequest,TravelIntent
 from datetime import date,timedelta
 
@@ -88,7 +91,7 @@ async def test_feedback_question_uses_llm_context(monkeypatch):
             calls.append(messages)
             return SimpleNamespace(content="第二天已经重新调过了，你看下现在顺不顺。")
 
-    monkeypatch.setattr(conversation,"feedback_llm",FakeFeedbackLLM())
+    monkeypatch.setattr(feedback_module,"feedback_llm",FakeFeedbackLLM())
 
     question = await build_feedback_question(
         "修改一下第二天行程",
@@ -116,7 +119,7 @@ async def test_feedback_question_falls_back_when_llm_fails(monkeypatch):
         async def ainvoke(self, messages):
             raise RuntimeError("llm unavailable")
 
-    monkeypatch.setattr(conversation,"feedback_llm",FailingFeedbackLLM())
+    monkeypatch.setattr(feedback_module,"feedback_llm",FailingFeedbackLLM())
 
     question = await build_feedback_question("修改一下第二天行程",None)
 

@@ -12,7 +12,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from app.agents.intent import parse_travel_intent
+from app.planning.intent_parser import parse_travel_intent
 from app.schemas import TripRequest
 
 

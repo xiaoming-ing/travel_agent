@@ -3,12 +3,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.agents.itinerary import (
+from app.planning.prompts import (
       _build_itinerary_prompt,
       _format_hard_constraints,
       _format_soft_preferences,
 )
-from app.agents.itinerary import generate_plan
+from app.planning.itinerary import generate_plan
 from app.schemas import Attraction, TravelIntent, TripPlan, TripRequest
 
 def test_format_hard_constraints():
@@ -166,8 +166,8 @@ async def test_generate_plan_repairs_constraint_violation_at_most_once():
       fake_llm = MagicMock()
       fake_llm.with_structured_output.return_value = planner
 
-      with patch("app.agents.itinerary.llm", fake_llm), patch(
-          "app.agents.itinerary.retrieve_for_attractions",
+      with patch("app.planning.itinerary.llm", fake_llm), patch(
+          "app.planning.itinerary.retrieve_for_attractions",
           new=AsyncMock(return_value={}),
       ):
           plan, _ = await generate_plan(
@@ -205,8 +205,8 @@ async def test_generate_plan_reports_violations_after_single_failed_repair():
       fake_llm = MagicMock()
       fake_llm.with_structured_output.return_value = planner
 
-      with patch("app.agents.itinerary.llm", fake_llm), patch(
-          "app.agents.itinerary.retrieve_for_attractions",
+      with patch("app.planning.itinerary.llm", fake_llm), patch(
+          "app.planning.itinerary.retrieve_for_attractions",
           new=AsyncMock(return_value={}),
       ):
           plan, _ = await generate_plan(

@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 
-from app.graph.workflow import build_search_preferences, run_workflow
+from app.planning.service import build_search_preferences, run_workflow
 from app.schemas import Attraction, TravelIntent, TripRequest
 
 
@@ -48,7 +48,7 @@ def test_build_search_preferences_merges_themes_and_travelers():
 @pytest.mark.asyncio
 async def test_phase1_failure_returns_fallback_plan():
     with patch(
-        "app.graph.workflow.agent.ainvoke",
+        "app.planning.service.agent.ainvoke",
         new=AsyncMock(side_effect=RuntimeError("LLM 超时")),
     ):
         result = await run_workflow(
@@ -65,10 +65,10 @@ async def test_phase1_failure_returns_fallback_plan():
 @pytest.mark.asyncio
 async def test_no_attractions_returns_fallback_plan():
     with patch(
-        "app.graph.workflow.agent.ainvoke",
+        "app.planning.service.agent.ainvoke",
         new=AsyncMock(return_value=None),
     ), patch(
-        "app.graph.workflow.get_session",
+        "app.planning.service.get_session",
         return_value={"attractions": [], "hotels": [], "weather": []},
     ):
         result = await run_workflow(
@@ -93,13 +93,13 @@ async def test_phase1_message_contains_structured_intent():
     fake_search_tool = make_fake_search_tool()
 
     with patch(
-        "app.graph.workflow.agent.ainvoke",
+        "app.planning.service.agent.ainvoke",
         new=AsyncMock(return_value=fake_agent_result),
     ) as mock_ainvoke, patch(
-        "app.graph.workflow.search_specific_place",
+        "app.planning.service.search_specific_place",
         new=fake_search_tool,
     ), patch(
-        "app.graph.workflow.get_session",
+        "app.planning.service.get_session",
         return_value={
             "attractions": [],
             "hotels": [],
@@ -136,13 +136,13 @@ async def test_all_must_visit_places_are_queried():
     fake_search_tool = make_fake_search_tool()
 
     with patch(
-        "app.graph.workflow.agent.ainvoke",
+        "app.planning.service.agent.ainvoke",
         new=AsyncMock(return_value=fake_agent_result),
     ), patch(
-        "app.graph.workflow.search_specific_place",
+        "app.planning.service.search_specific_place",
         new=fake_search_tool,
     ), patch(
-        "app.graph.workflow.get_session",
+        "app.planning.service.get_session",
         return_value={
             "attractions": [],
             "hotels": [],
@@ -185,16 +185,16 @@ async def test_avoided_attractions_are_filtered_before_generate_plan():
     fake_generate_plan = AsyncMock(return_value=({"attractions": []}, 0))
 
     with patch(
-        "app.graph.workflow.agent.ainvoke",
+        "app.planning.service.agent.ainvoke",
         new=AsyncMock(return_value={"messages": []}),
     ), patch(
-        "app.graph.workflow.get_session",
+        "app.planning.service.get_session",
         return_value=session,
     ), patch(
-        "app.graph.workflow.generate_plan",
+        "app.planning.service.generate_plan",
         new=fake_generate_plan,
     ), patch(
-        "app.graph.workflow.adispatch_custom_event",
+        "app.planning.service.adispatch_custom_event",
         new=AsyncMock(),
     ):
         await run_workflow(
@@ -221,16 +221,16 @@ async def test_filtering_preserves_candidate_order():
     fake_generate_plan = AsyncMock(return_value=({"attractions": []}, 0))
 
     with patch(
-        "app.graph.workflow.agent.ainvoke",
+        "app.planning.service.agent.ainvoke",
         new=AsyncMock(return_value={"messages": []}),
     ), patch(
-        "app.graph.workflow.get_session",
+        "app.planning.service.get_session",
         return_value=session,
     ), patch(
-        "app.graph.workflow.generate_plan",
+        "app.planning.service.generate_plan",
         new=fake_generate_plan,
     ), patch(
-        "app.graph.workflow.adispatch_custom_event",
+        "app.planning.service.adispatch_custom_event",
         new=AsyncMock(),
     ):
         await run_workflow(
@@ -257,16 +257,16 @@ async def test_empty_avoid_places_keeps_all_candidates():
     fake_generate_plan = AsyncMock(return_value=({"attractions": []}, 0))
 
     with patch(
-        "app.graph.workflow.agent.ainvoke",
+        "app.planning.service.agent.ainvoke",
         new=AsyncMock(return_value={"messages": []}),
     ), patch(
-        "app.graph.workflow.get_session",
+        "app.planning.service.get_session",
         return_value=session,
     ), patch(
-        "app.graph.workflow.generate_plan",
+        "app.planning.service.generate_plan",
         new=fake_generate_plan,
     ), patch(
-        "app.graph.workflow.adispatch_custom_event",
+        "app.planning.service.adispatch_custom_event",
         new=AsyncMock(),
     ):
         await run_workflow(
@@ -292,16 +292,16 @@ async def test_all_candidates_filtered_returns_fallback_without_generating_plan(
     fake_generate_plan = AsyncMock()
 
     with patch(
-        "app.graph.workflow.agent.ainvoke",
+        "app.planning.service.agent.ainvoke",
         new=AsyncMock(return_value={"messages": []}),
     ), patch(
-        "app.graph.workflow.get_session",
+        "app.planning.service.get_session",
         return_value=session,
     ), patch(
-        "app.graph.workflow.generate_plan",
+        "app.planning.service.generate_plan",
         new=fake_generate_plan,
     ), patch(
-        "app.graph.workflow.adispatch_custom_event",
+        "app.planning.service.adispatch_custom_event",
         new=AsyncMock(),
     ):
         result = await run_workflow(
@@ -329,16 +329,16 @@ async def test_filtering_does_not_mutate_original_candidates_list():
     }
 
     with patch(
-        "app.graph.workflow.agent.ainvoke",
+        "app.planning.service.agent.ainvoke",
         new=AsyncMock(return_value={"messages": []}),
     ), patch(
-        "app.graph.workflow.get_session",
+        "app.planning.service.get_session",
         return_value=session,
     ), patch(
-        "app.graph.workflow.generate_plan",
+        "app.planning.service.generate_plan",
         new=AsyncMock(return_value=({"attractions": []}, 0)),
     ), patch(
-        "app.graph.workflow.adispatch_custom_event",
+        "app.planning.service.adispatch_custom_event",
         new=AsyncMock(),
     ):
         await run_workflow(

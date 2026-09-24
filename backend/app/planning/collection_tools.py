@@ -1,7 +1,7 @@
 
-from app.agents.weather import lookup_location_id,fetch_weather,pick_endpoint_days
-from app.agents.attraction import fetch_attractions,parse_to_attraction,resolve_poi_types,search_attraction_by_name
-from app.agents.hotel import fetch_hotels_around,parse_to_hotel,compute_centroid,haversine,score_hotel
+from app.providers.weather import lookup_location_id,fetch_weather,pick_endpoint_days
+from app.providers.attractions import fetch_attractions,parse_to_attraction,resolve_poi_types,search_attraction_by_name
+from app.providers.hotels import fetch_hotels_around,parse_to_hotel,compute_centroid,haversine,score_hotel
 from langchain_core.tools import tool
 import contextvars
 

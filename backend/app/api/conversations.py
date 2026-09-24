@@ -1,7 +1,7 @@
 """历史对话相关路由:列表 / 详情 / 删除 / 实时状态 / 标记完成。"""
 from fastapi import APIRouter, Request, HTTPException, Depends
 
-from app.graph.streaming import extract_interrupt
+from app.conversation.streaming import extract_interrupt
 from app.api.deps import get_current_user_id, get_owned_conversation
 from app.db.conversation_store import (
     list_conversations, get_conversation, delete_conversation, complete_conversation,

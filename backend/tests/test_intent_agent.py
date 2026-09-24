@@ -1,6 +1,6 @@
 import pytest
 from app.schemas import TravelIntent, TripRequest
-from app.agents.intent import parse_travel_intent
+from app.planning.intent_parser import parse_travel_intent
 from datetime import date
 from unittest.mock import AsyncMock,MagicMock,patch
 
@@ -47,7 +47,7 @@ async def test_llm_failure_returns_default_intent():
     fake_intent_llm = MagicMock()
     fake_intent_llm.with_structured_output.return_value = fake_structured_llm
     with patch(
-        "app.agents.intent.intent_llm",
+        "app.planning.intent_parser.intent_llm",
         fake_intent_llm,
     ):
         result = await parse_travel_intent(request)
@@ -58,4 +58,3 @@ async def test_llm_failure_returns_default_intent():
         include_raw=True,
     )
     fake_structured_llm.ainvoke.assert_awaited_once()
-    

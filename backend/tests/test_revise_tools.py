@@ -1,10 +1,9 @@
-from app.agents.revise_tools import (
-    apply_revision,
+from app.revision.agent import apply_revision
+from app.revision.context import get_ctx, reset_ctx
+from app.revision.tools import (
     change_day_pace,
     change_transport,
-    get_ctx,
     remove_attraction,
-    reset_ctx,
     update_budget_limit,
     update_meal_constraints,
 )
@@ -32,7 +31,7 @@ async def test_apply_revision():
     failing_invoke = AsyncMock(side_effect=RuntimeError("LLM timeout"))
 
     with patch(
-        "app.agents.revise_tools.revise_agent.ainvoke",
+        "app.revision.agent.revise_agent.ainvoke",
         new=failing_invoke
     ):
         plan,tokens,note = await apply_revision(

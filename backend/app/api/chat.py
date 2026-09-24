@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from langgraph.types import Command
 
 from app.schemas import ChatResumeBody, ChatStartBody
-from app.graph.streaming import stream_graph
+from app.conversation.streaming import stream_graph
 from app.db.conversation_store import (
     create_conversation, complete_conversation, get_conversation,
 )

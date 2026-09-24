@@ -1,4 +1,4 @@
-from app.agents.plan_validator import (
+from app.planning.validator import (
     remove_cross_day_duplicates,
     validate_plan,
 )

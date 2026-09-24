@@ -44,18 +44,21 @@
 travel-agent
 ├── backend
 │   ├── app
-│   │   ├── agents        # Agent 工具、行程生成、修改工具
 │   │   ├── api           # FastAPI 路由
+│   │   ├── conversation  # LangGraph 状态、节点、澄清/反馈与 SSE
 │   │   ├── core          # 鉴权、限流、Token 统计等基础能力
 │   │   ├── db            # SQLite 数据访问层
-│   │   ├── graph         # LangGraph 工作流与 SSE streaming
+│   │   ├── planning      # 意图识别、数据收集、行程生成与校验
+│   │   ├── providers     # 景点、酒店、天气等外部数据适配
+│   │   ├── rag           # 用户知识库检索
+│   │   ├── revision      # 行程修订 Agent、工具与运行上下文
 │   │   └── schemas       # Pydantic 请求/响应模型
 │   ├── tests             # 后端测试
 │   └── requirements.txt
 ├── frontend
 │   ├── src
 │   │   ├── api           # 前端 API 和 SSE 读取
-│   │   ├── components    # 行程展示组件
+│   │   ├── components    # 聊天面板与行程展示组件
 │   │   ├── views         # 登录、表单、聊天、结果页
 │   │   └── types         # 前端类型定义
 │   └── package.json
@@ -135,6 +138,8 @@ curl http://127.0.0.1:8000/api/health
 ```
 
 ### 2. 启动前端
+
+前端使用 Vite 5，需要 Node.js 18 或更高版本。
 
 ```bash
 cd frontend
